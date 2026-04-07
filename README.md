@@ -65,7 +65,7 @@ flowchart TD
     B e2@--> C[(MongoDB)]
     B e3@--> D("Lógica de Whitelist \n(Cruzamento de Dados)")
     D e4@--> E("Dashboard Web \n(Vue.js)\nPainel Segurança")
-    D e5@--> F("App Mobile (Ionic)\n Cadastro de Veículos\n Servidores/Alunos")
+    D e5@--> F("App Mobile (Ionic)\n Cadastro de Veículos\n Servidores/Alunos/Visitantes")
     e2@{ curve: linear }
     e3@{ curve: linear }
     e4@{ curve: linear }
