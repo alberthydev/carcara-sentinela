@@ -206,7 +206,7 @@ A eficácia do sistema será medida pela comparação entre:
 | Desenvolvimento do App de Cadastro | | | ✅ | ✅ | |
 | Desenvolvimento do Dashboard do Segurança | | | | ✅ | ✅ |
 | Testes de Integração e Homologação na Guarita | | | | | ✅ |
-| Finalização do Relatório Técnico e Apresentação do MVP | | | | | ✅ |
+| Finalização do Relatório Técnico e Apresentação do PI com MVP | | | | | ✅ |
 
 ---
 
