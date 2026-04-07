@@ -83,7 +83,7 @@ flowchart TD
 flowchart LR
     A([Chegada do\nVeículo]) --> B[Leitura da Placa\ndo Veículo com LPR]
     B --> C[Extração dos Dados\npara JSON: Horário,\nPlaca e Cor]
-    C --> D[Análise do JSON\njunto ao Banco\nde Dados]
+    C --> D[(Análise do JSON\njunto ao Banco\nde Dados)]
  
     D --> E[Veículo Não\nEncontrado]
     D --> F[Veículo\nEncontrado]
@@ -98,7 +98,7 @@ flowchart LR
     style A fill:#dce8f5,stroke:#aac4e0
     style B fill:#dce8f5,stroke:#aac4e0
     style C fill:#dce8f5,stroke:#aac4e0
-    style D fill:#dce8f5,stroke:#aac4e0
+    style D fill:#EDEDED,stroke:#5E5E5E
     style E fill:#f5dcdc,stroke:#e0aaaa
     style G fill:#f5dcdc,stroke:#e0aaaa
     style J fill:#f5dcdc,stroke:#e0aaaa
