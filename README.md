@@ -200,7 +200,7 @@ A eficácia do sistema será medida pela comparação entre:
 | Definição de requisitos e estudo do padrão JSON das câmeras LPR | | ✅ | | | |
 | Levantamento de referências | | ✅ | | | |
 | Escolha das tecnologias | | ✅ | | | |
-| Planejamento dos procedimentos e testes | | ✅ | | | |
+| Planejamento dos procedimentos | | ✅ | | | |
 | Modelagem do Banco de Dados e Setup do Ambiente | | | ✅ | | |
 | Desenvolvimento da API de Ingestão | | | ✅ | ✅ | |
 | Desenvolvimento do App de Cadastro | | | ✅ | ✅ | |
