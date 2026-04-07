@@ -3,6 +3,9 @@
 <img src="https://img.shields.io/badge/status-em%20desenvolvimento-green?style=for-the-badge" />
 <img src="https://img.shields.io/badge/licença-MIT-blue?style=for-the-badge" />
 <img src="https://img.shields.io/badge/IFC-Videira%2FSC-darkgreen?style=for-the-badge" />
+<br>
+<br>
+<img src="carcara.png" style="width: 150px">
 
 # CARCARÁ SENTINELA
 
