@@ -62,10 +62,10 @@ A solução é desenvolvida em **código aberto**, focada no cadastramento de se
 flowchart TD
     A["Câmeras LPR (2x)"] e1@-->|JSON| B{"API de Ingestão \n(Express.js)"}
     e1@{ animate: true, curve: linear }
-    B e2@--> C[(MongoDB)]
-    B e3@--> D("Lógica de Whitelist \n(Cruzamento de Dados)")
-    D e4@--> E("Dashboard Web \n(Vue.js)\nPainel Segurança")
-    D e5@--> F("App Mobile (Ionic)\n Cadastro de Veículos\n Servidores/Alunos/Visitantes")
+    B e2@<--> C[(MongoDB)]
+    B e3@<--> D("Lógica de Whitelist \n(Cruzamento de Dados)")
+    D e4@<--> E("Dashboard Web \n(Vue.js)\nPainel Segurança")
+    D e5@<--> F("App Mobile (Ionic)\n Cadastro de Veículos\n Servidores/Alunos/Visitantes")
     e2@{ curve: linear }
     e3@{ curve: linear }
     e4@{ curve: linear }
