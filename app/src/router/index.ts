@@ -11,8 +11,8 @@ const router = createRouter({
       component: HomeView
     },
     {
-      path: '/cadastroVisitante',
-      name: 'cadastroVisitante',
+      path: '/userRegistry',
+      name: 'userRegistry',
       component: CadastroVisitanteView
     }
   ]

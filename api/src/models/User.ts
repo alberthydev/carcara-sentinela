@@ -10,6 +10,7 @@ export interface ICarro {
 
 export interface IUser extends Document {
   cpf: string;
+  matricula: string;
   senha: string;
   nome: string;
   sobrenome: string;

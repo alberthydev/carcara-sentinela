@@ -1,7 +1,9 @@
 <template>
   <main class="cadastro-container">
+    <button type="button" @click="mockarDadosIFC" class="btn-admin">🛠️ Mockar Aluno (Admin)</button>
     <h2>Cadastro de Usuário</h2>
     <p>Preencha os seus dados para acessar o campus:</p>
+
 
     <form @submit.prevent="realizarCadastro" class="formulario">
       <div class="grupo-input">
@@ -15,44 +17,58 @@
       </div>
 
       <div v-if="form.tipo" class="campos-cadastro">
-        <div v-if="form.tipo === 'aluno' || form.tipo === 'servidor'" class="grupo-input">
-          <label>Matrícula Acadêmica/SIAPE:</label>
-          <input v-model="form.matricula" type="text" placeholder="Ex: 2021101..." required />
-        </div>
+        <div v-if="form.tipo" class="grupo-input">
+        <label>CPF:</label>
+        <input v-model="form.cpf" type="text" placeholder="123.456.789-00" required />
+      </div>
 
-        <div class="grupo-input">
-          <label>CPF:</label>
-          <input v-model="form.cpf" type="text" placeholder="123.456.789-00" required />
-        </div>
+      <div v-if="form.tipo === 'aluno' || form.tipo === 'servidor'" class="grupo-input">
+        <label>Matrícula Acadêmica/SIAPE:</label>
+        <input v-model="form.matricula" type="text" placeholder="Ex: 2021101..." />
+        <button type="button" @click="validarComIFC" class="btn-validar">Validar no Sistema IFC</button>
+      </div>
 
-        <div class="grupo-input dupla">
-          <div>
-            <label>Nome:</label>
-            <input v-model="form.nome" type="text" required />
+        <div v-if="form.tipo === 'visitante' || validadoNoIFC">
+          <div class="grupo-input dupla">
+            <div>
+              <label>Nome:</label>
+              <!-- Trava o campo se foi validado pelo IFC -->
+              <input 
+                v-model="form.nome" 
+                type="text" 
+                :disabled="validadoNoIFC" 
+                required 
+              />
+            </div>
+            <div>
+              <label>Sobrenome:</label>
+              <!-- Trava o campo se foi validado pelo IFC -->
+              <input 
+                v-model="form.sobrenome" 
+                type="text" 
+                :disabled="validadoNoIFC" 
+                required 
+              />
+            </div>
           </div>
-          <div>
-            <label>Sobrenome:</label>
-            <input v-model="form.sobrenome" type="text" required />
+
+          <div class="grupo-input">
+            <label>Senha:</label>
+            <input v-model="form.senha" type="password" placeholder="Mínimo 8 caracteres, letras, números e símbolos" required />
           </div>
+
+          <div class="grupo-input">
+            <label>Foto de Perfil (Nome do arquivo por agora):</label>
+            <input v-model="form.fotoUrl" type="text" placeholder="minha_foto.png" required />
+          </div>
+
+          <button type="submit" :disabled="carregando">
+            {{ carregando ? 'Validando dados...' : 'Concluir Cadastro' }}
+          </button>
         </div>
-
-        <div class="grupo-input">
-          <label>Senha:</label>
-          <input v-model="form.senha" type="password" placeholder="Mínimo 8 caracteres, letras, números e símbolos" required />
-        </div>
-
-        <div class="grupo-input">
-          <label>Foto de Perfil (Nome do arquivo por agora):</label>
-          <input v-model="form.fotoUrl" type="text" placeholder="minha_foto.png" required />
-        </div>
-
-        <button type="submit" :disabled="carregando">
-          {{ carregando ? 'Enviando...' : 'Concluir Cadastro' }}
-        </button>
-
-        <div v-if="mensagem" :class="['alerta', tipoAlerta]">
+      </div>
+      <div v-if="mensagem" :class="['alerta', tipoAlerta]">
           {{ mensagem }}
-        </div>
       </div>
     </form>
   </main>
@@ -60,6 +76,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 
 const form = ref({
   cpf: '',
@@ -71,19 +88,51 @@ const form = ref({
   fotoUrl: ''
 })
 
-const mensagem = ref('')
-const tipoAlerta = ref('')
-const carregando = ref(false)
+const router = useRouter();
+const mensagem = ref('');
+const tipoAlerta = ref('');
+const carregando = ref(false);
+const validadoNoIFC = ref(false);
 
-const cadastroValido = computed(() => {
-  if (form.value.tipo === 'visitante') {
-    return form.value.cpf.length >= 11
+const mockarDadosIFC = async () => {
+  const nome = prompt("Nome do Aluno:")
+  const cpf = prompt("CPF do Aluno:")
+  const matricula = prompt("Matrícula do Aluno:")
+
+  if (nome && cpf && matricula) {
+    await fetch('http://localhost:3000/api/users/admin/mock-estudante', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome, cpf, matricula })
+    })
+    alert("Dados integrados ao 'Sistema IFC' com sucesso!")
   }
-  if (form.value.tipo === 'aluno' || form.value.tipo === 'servidor') {
-    return form.value.cpf.length >= 11 && form.value.matricula.length >= 5
+}
+
+const validarComIFC = async () => {
+  if (!form.value.cpf || !form.value.matricula) {
+    alert("Preencha CPF e Matrícula primeiro.")
+    return
   }
-  return false
-})
+  
+  const res = await fetch(`http://localhost:3000/api/users/validar-ifc/${form.value.cpf}/${form.value.matricula}`)
+  const dados = await res.json()
+
+  if (res.ok) {
+    validadoNoIFC.value = true
+    
+    const partesNome = dados.nome.split(' ')
+    form.value.nome = partesNome[0]
+    form.value.sobrenome = partesNome.slice(1).join(' ') || ''
+    
+    mensagem.value = `Bem-vindo, ${dados.nome}! Identidade confirmada pelo IFC.`
+    tipoAlerta.value = 'sucesso'
+  } else {
+    validadoNoIFC.value = false
+    mensagem.value = dados.erro
+    tipoAlerta.value = 'erro'
+  }
+}
 
 const realizarCadastro = async () => {
   carregando.value = true
@@ -100,7 +149,7 @@ const realizarCadastro = async () => {
   }
 
   try {
-    const resposta = await fetch('http://localhost:3000/api/visitantes/cadastro', {
+    const resposta = await fetch('http://localhost:3000/api/users/cadastro', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -111,7 +160,10 @@ const realizarCadastro = async () => {
     if (resposta.ok) {
       mensagem.value = dados.mensagem
       tipoAlerta.value = 'sucesso'
-      form.value = { cpf: '', matricula: '', nome: '', sobrenome: '', tipo: '', senha: '', fotoUrl: '' }
+      setTimeout(() => {
+        form.value = { cpf: '', matricula: '', nome: '', sobrenome: '', tipo: '', senha: '', fotoUrl: '' }
+        router.push('/')
+      }, 3000)
     } else {
       mensagem.value = dados.erro || 'Erro ao cadastrar.'
       tipoAlerta.value = 'erro'

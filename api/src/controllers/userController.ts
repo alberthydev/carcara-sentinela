@@ -18,8 +18,8 @@ export const registryUser = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const visitanteExistente = await User.findOne({ cpf });
-    if (visitanteExistente) {
+    const hasUser = await User.findOne({ cpf });
+    if (hasUser) {
       res.status(400).json({ erro: 'CPF já cadastrado.' });
       return;
     }
@@ -47,7 +47,7 @@ export const registryUser = async (req: Request, res: Response): Promise<void> =
   }
 };
 
-export const listarVisitantes = async (req: Request,  res: Response): Promise<void> => {
+export const usersList = async (req: Request,  res: Response): Promise<void> => {
   try{
     const visitantes = await User.find({});
     res.status(200).json(visitantes);

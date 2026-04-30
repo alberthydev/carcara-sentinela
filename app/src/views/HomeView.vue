@@ -6,9 +6,9 @@
       <h2>Lista de Visitantes Cadastrados</h2>
       <button @click="buscarTodos">Atualizar Lista</button>
       
-      <ul>
-      <li v-for="v in listaVisitantes" :key="v._id" style="margin-bottom: 10px; border-bottom: 1px solid #ccc;">
-        <strong>{{ v.nome }} {{ v.sobrenome }}</strong> - CPF: {{ v.cpf }}
+      <ul style="list-style: none;">
+      <li v-for="v in usersList" :key="v._id" style="margin-bottom: 10px; border-bottom: 1px solid #ccc;">
+        <strong>{{ v.nome }} {{ v.sobrenome }}</strong> - CPF: {{ v.cpf }} - Matricula: {{ v.matricula || 'Não possui' }}
       </li>
     </ul>
     </section>
@@ -25,26 +25,27 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-interface Visitante {
+interface User {
   _id: string;
+  matricula?: string;
   nome: string;
   sobrenome: string;
   cpf: string;
 }
 
 const router = useRouter()
-const listaVisitantes = ref<Visitante[]>([]);
+const usersList = ref<User[]>([]);
 
 const registry = () => {
-  router.push('/cadastroVisitante')
+  router.push('/userRegistry')
 }
 
 const buscarTodos = async () => {
   try {
-    const resposta = await fetch('http://localhost:3000/api/visitantes/todos')
+    const resposta = await fetch('http://localhost:3000/api/users/todos')
     const dados = await resposta.json()
     
-    listaVisitantes.value = dados 
+    usersList.value = dados 
   } catch (erro) {
     console.error("Erro ao buscar dados da API")
   }
