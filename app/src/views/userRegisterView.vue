@@ -1,11 +1,11 @@
 <template>
   <main class="cadastro-container">
-    <button type="button" @click="mockarDadosIFC" class="btn-admin">🛠️ Mockar Aluno (Admin)</button>
+    <button type="button" @click="mockarDadosIFC" class="btn-admin">Mockar Aluno/Servidor (Admin)</button>
     <h2>Cadastro de Usuário</h2>
     <p>Preencha os seus dados para acessar o campus:</p>
 
-
     <form @submit.prevent="realizarCadastro" class="formulario">
+      <!-- 1. Seleção de Perfil -->
       <div class="grupo-input">
         <label>Selecione seu perfil:</label>
         <select v-model="form.tipo" required>
@@ -16,23 +16,54 @@
         </select>
       </div>
 
-      <div v-if="form.tipo" class="campos-cadastro">
-        <div v-if="form.tipo" class="grupo-input">
-        <label>CPF:</label>
-        <input v-model="form.cpf" type="text" placeholder="123.456.789-00" required />
-      </div>
+      <!-- 2. Campos de Identificação (Sempre aparecem se houver tipo selecionado) -->
+      <div v-if="form.tipo" class="campos-identificacao">
+        <div class="grupo-input">
+          <label>CPF:</label>
+          <input 
+            v-model="form.cpf" 
+            type="text" 
+            placeholder="123.456.789-00" 
+            :disabled="validadoNoIFC" 
+            required 
+          />
+        </div>
 
-      <div v-if="form.tipo === 'aluno' || form.tipo === 'servidor'" class="grupo-input">
-        <label>Matrícula Acadêmica/SIAPE:</label>
-        <input v-model="form.matricula" type="text" placeholder="Ex: 2021101..." />
-        <button type="button" @click="validarComIFC" class="btn-validar">Validar no Sistema IFC</button>
-      </div>
+        <div v-if="form.tipo === 'aluno' || form.tipo === 'servidor'" class="grupo-input">
+          <label>Matrícula Acadêmica/SIAPE:</label>
+          <input 
+            v-model="form.matricula" 
+            type="text" 
+            placeholder="Ex: 2021101..." 
+            :disabled="validadoNoIFC" 
+          />
+    
+          <!-- Alternância de botões de validação -->
+          <button 
+            v-if="!validadoNoIFC" 
+            type="button" 
+            @click="validarComIFC" 
+            class="btn-validar"
+          >
+            Validar no Sistema IFC
+          </button>
+    
+          <button 
+            v-else 
+            type="button" 
+            @click="resetarValidacao" 
+            class="btn-voltar"
+          >
+            Voltar
+          </button>
+        </div>
 
-        <div v-if="form.tipo === 'visitante' || validadoNoIFC">
+        <!-- 3. Campos Finais (Nome, Senha, Foto) -->
+        <!-- Aparecem para visitantes OU se o aluno foi validado -->
+        <div v-if="form.tipo === 'visitante' || validadoNoIFC" class="campos-finais">
           <div class="grupo-input dupla">
             <div>
               <label>Nome:</label>
-              <!-- Trava o campo se foi validado pelo IFC -->
               <input 
                 v-model="form.nome" 
                 type="text" 
@@ -42,7 +73,6 @@
             </div>
             <div>
               <label>Sobrenome:</label>
-              <!-- Trava o campo se foi validado pelo IFC -->
               <input 
                 v-model="form.sobrenome" 
                 type="text" 
@@ -54,19 +84,21 @@
 
           <div class="grupo-input">
             <label>Senha:</label>
-            <input v-model="form.senha" type="password" placeholder="Mínimo 8 caracteres, letras, números e símbolos" required />
+            <input v-model="form.senha" type="password" placeholder="Mínimo 8 caracteres" required />
           </div>
 
           <div class="grupo-input">
-            <label>Foto de Perfil (Nome do arquivo por agora):</label>
+            <label>Foto de Perfil:</label>
             <input v-model="form.fotoUrl" type="text" placeholder="minha_foto.png" required />
           </div>
 
           <button type="submit" :disabled="carregando">
-            {{ carregando ? 'Validando dados...' : 'Concluir Cadastro' }}
+            {{ carregando ? 'Enviando...' : 'Concluir Cadastro' }}
           </button>
         </div>
       </div>
+
+      <!-- Mensagens de Alerta -->
       <div v-if="mensagem" :class="['alerta', tipoAlerta]">
           {{ mensagem }}
       </div>
@@ -75,8 +107,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+
+
 
 const form = ref({
   cpf: '',
@@ -93,6 +127,15 @@ const mensagem = ref('');
 const tipoAlerta = ref('');
 const carregando = ref(false);
 const validadoNoIFC = ref(false);
+
+watch(() => form.value.tipo, () => {
+  validadoNoIFC.value = false;
+  mensagem.value = '';
+  form.value.nome = '';
+  form.value.sobrenome = '';
+  form.value.matricula = '';
+  form.value.cpf = ''; // Opcional: limpa o CPF também para evitar erro de validação
+});
 
 const mockarDadosIFC = async () => {
   const nome = prompt("Nome do Aluno:")
@@ -133,6 +176,15 @@ const validarComIFC = async () => {
     tipoAlerta.value = 'erro'
   }
 }
+
+const resetarValidacao = () => {
+  validadoNoIFC.value = false;
+  mensagem.value = '';
+  tipoAlerta.value = '';
+
+  form.value.nome = '';
+  form.value.sobrenome = '';
+};
 
 const realizarCadastro = async () => {
   carregando.value = true
@@ -197,4 +249,28 @@ button:disabled { background-color: #94d3a2; cursor: not-allowed; }
 .alerta { padding: 1rem; border-radius: 4px; text-align: center; font-weight: bold; margin-top: 10px;}
 .sucesso { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;}
 .erro { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;}
+input:disabled {
+  background-color: #e9ecef; /* Cinza claro */
+  cursor: not-allowed;
+  color: #495057;
+  border: 1px solid #ced4da;
+}
+
+.btn-admin {
+  background-color: #6c757d;
+  font-size: 0.9rem;
+  padding: 8px;
+  float: right;
+}
+.btn-voltar {
+  background-color: #ffc107; /* Amarelo/Laranja para indicar correção */
+  color: #212529;
+  margin-top: 10px;
+  padding: 0.8rem;
+  font-weight: bold;
+}
+
+.btn-voltar:hover {
+  background-color: #e0a800;
+}
 </style>
