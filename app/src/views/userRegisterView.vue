@@ -5,7 +5,6 @@
     <p>Preencha os seus dados para acessar o campus:</p>
 
     <form @submit.prevent="realizarCadastro" class="formulario">
-      <!-- 1. Seleção de Perfil -->
       <div class="grupo-input">
         <label>Selecione seu perfil:</label>
         <select v-model="form.tipo" required>
@@ -16,7 +15,6 @@
         </select>
       </div>
 
-      <!-- 2. Campos de Identificação (Sempre aparecem se houver tipo selecionado) -->
       <div v-if="form.tipo" class="campos-identificacao">
         <div class="grupo-input">
           <label>CPF:</label>
@@ -58,8 +56,6 @@
           </button>
         </div>
 
-        <!-- 3. Campos Finais (Nome, Senha, Foto) -->
-        <!-- Aparecem para visitantes OU se o aluno foi validado -->
         <div v-if="form.tipo === 'visitante' || validadoNoIFC" class="campos-finais">
           <div class="grupo-input dupla">
             <div>
