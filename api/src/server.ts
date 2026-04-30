@@ -1,7 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors'; 
-import visitanteRoutes from './routes/visitanteRoutes';
+import visitanteRoutes from './routes/userRoutes';
 
 const app = express();
 

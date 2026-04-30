@@ -8,20 +8,28 @@ export interface ICarro {
   cor: string;
 }
 
-export interface IVisitante extends Document {
+export interface IUser extends Document {
   cpf: string;
   senha: string;
   nome: string;
   sobrenome: string;
+  tipo: 'visitante' | 'aluno' | 'servidor',
   fotoUrl: string; 
   carros?: ICarro[]; // Opcional
 }
 
-const VisitanteSchema: Schema = new Schema({
+const UserSchema: Schema = new Schema({
   cpf: { type: String, required: true, unique: true },
+  matricula: { type: String, required: false},
   senha: { type: String, required: true },
   nome: { type: String, required: true },
   sobrenome: { type: String, required: true },
+  tipo: { 
+    type: String, 
+    enum: ['visitante', 'aluno', 'servidor'], 
+    required: true,
+    default: 'visitante' 
+  },
   fotoUrl: { type: String, required: true },
   carros: [{
     placa: { type: String, required: true },
@@ -32,4 +40,4 @@ const VisitanteSchema: Schema = new Schema({
   }]
 }, { timestamps: true });
 
-export default mongoose.model<IVisitante>('Visitante', VisitanteSchema);
+export default mongoose.model<IUser>('Visitante', UserSchema);

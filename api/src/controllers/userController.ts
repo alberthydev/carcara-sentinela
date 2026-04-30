@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
-import Visitante from '../models/Visitante';
+import User from '../models/User';
 
-export const cadastrarVisitante = async (req: Request, res: Response): Promise<void> => {
+export const registryUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { cpf, senha, nome, sobrenome, fotoUrl, carros } = req.body;
+    const { cpf, matricula, senha, nome, sobrenome, fotoUrl, carros, tipo } = req.body;
 
     const regexSenha = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!regexSenha.test(senha)) {
@@ -18,7 +18,7 @@ export const cadastrarVisitante = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    const visitanteExistente = await Visitante.findOne({ cpf });
+    const visitanteExistente = await User.findOne({ cpf });
     if (visitanteExistente) {
       res.status(400).json({ erro: 'CPF já cadastrado.' });
       return;
@@ -27,18 +27,20 @@ export const cadastrarVisitante = async (req: Request, res: Response): Promise<v
     const salt = await bcrypt.genSalt(10);
     const senhaHash = await bcrypt.hash(senha, salt);
 
-    const novoVisitante = new Visitante({
+    const newUser = new User({
       cpf,
+      matricula,
       senha: senhaHash,
       nome,
       sobrenome,
+      tipo,
       fotoUrl,
       carros: carros || [] // Carros é opcional
     });
 
-    await novoVisitante.save();
+    await newUser.save();
 
-    res.status(201).json({ mensagem: 'Visitante cadastrado com sucesso!' });
+    res.status(201).json({ mensagem: 'Usuário cadastrado com sucesso!' });
   } catch (erro) {
     console.error('Erro no cadastro:', erro);
     res.status(500).json({ erro: 'Erro interno do servidor.' });
@@ -47,9 +49,9 @@ export const cadastrarVisitante = async (req: Request, res: Response): Promise<v
 
 export const listarVisitantes = async (req: Request,  res: Response): Promise<void> => {
   try{
-    const visitantes = await Visitante.find({});
+    const visitantes = await User.find({});
     res.status(200).json(visitantes);
   } catch(erro){
-    res.status(500).json({ erro: 'Erro ao buscar visitantes.' });
+    res.status(500).json({ erro: 'Erro ao buscar usuário.' });
   }
 }; 

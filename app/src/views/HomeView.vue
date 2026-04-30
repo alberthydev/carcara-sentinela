@@ -13,21 +13,10 @@
     </ul>
     </section>
 
-    <p v-if="!mostrandoOpcoes">Selecione uma opção para continuar:</p>
-    <p v-else>Qual é o seu perfil de usuário?</p>
-
-    <div class="botoes" v-if="!mostrandoOpcoes">
+    <div class="botoes">
       <button class="btn-login" disabled>Login (Em breve)</button>
       
-      <button class="btn-cadastro" @click="mostrandoOpcoes = true">Cadastrar</button>
-    </div>
-
-    <div class="botoes" v-else>
-      <button class="btn-visitante" @click="irParaVisitante">Sou Visitante</button>
-      
-      <button class="btn-aluno" disabled>Sou Aluno / Servidor (Em breve)</button>
-
-      <button class="btn-voltar" @click="mostrandoOpcoes = false">Voltar</button>
+      <button class="btn-cadastro" @click="registry">Cadastrar</button>
     </div>
   </main>
 </template>
@@ -46,9 +35,7 @@ interface Visitante {
 const router = useRouter()
 const listaVisitantes = ref<Visitante[]>([]);
 
-const mostrandoOpcoes = ref(false)
-
-const irParaVisitante = () => {
+const registry = () => {
   router.push('/cadastroVisitante')
 }
 
