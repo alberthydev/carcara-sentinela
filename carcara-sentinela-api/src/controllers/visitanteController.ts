@@ -44,3 +44,12 @@ export const cadastrarVisitante = async (req: Request, res: Response): Promise<v
     res.status(500).json({ erro: 'Erro interno do servidor.' });
   }
 };
+
+export const listarVisitantes = async (req: Request,  res: Response): Promise<void> => {
+  try{
+    const visitantes = await Visitante.find({});
+    res.status(200).json(visitantes);
+  } catch(erro){
+    res.status(500).json({ erro: 'Erro ao buscar visitantes.' });
+  }
+}; 
