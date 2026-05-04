@@ -4,21 +4,21 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - .:/usr/src/app 
-      - /usr/src/app/node_modules 
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
     environment:
       - PORT=3000
-      - MONGO_URI=mongodb://banco_dados:27017/carcara_db 
+      - MONGO_URI=mongodb://banco_dados:27017/carcara_db
     depends_on:
       - banco_dados
     command: npm run dev
 
   banco_dados:
-    image: mongo:latest
+    image: mongo:5.0
     ports:
       - "27017:27017"
     volumes:
-      - mongo_data:/data/db 
+      - mongo_data:/data/db
 
 volumes:
   mongo_data:
