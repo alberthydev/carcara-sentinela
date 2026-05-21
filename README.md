@@ -5,9 +5,9 @@
 <img src="https://img.shields.io/badge/IFC-Videira%2FSC-darkgreen?style=for-the-badge" />
 <br>
 <br>
-<img src="carcara.png" style="width: 150px">
+<img src="./assets/logo/carcara.png" style="width: 150px">
 <br>
-<img src="logo_2.png" style="width: 500px">
+<img src="./assets/logo/logo_2.png" style="width: 500px">
 
 ### Sistema de Autenticação e Controle de Acesso de Veículos em Instituições Federais de Ensino
 
