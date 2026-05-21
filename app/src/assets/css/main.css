@@ -1,0 +1,41 @@
+@import 'tailwindcss';
+
+html {
+  scroll-behavior: smooth;
+}
+
+@font-face {
+  font-family: 'Playfair Display Local';
+  src: url('../fonts/pfd.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --color-carcara-creme: #faf3ee;
+  --color-carcara-laranja: #f59e53;
+  --color-carcara-marrom: #4a2e1b;
+
+  --font-serif: 'Playfair Display Local', serif;
+  --font-sans: 'Inter', sans-serif;
+}
+
+body {
+  background-color: var(--color-carcara-creme);
+  color: var(--color-carcara-marrom);
+  font-family: var(--font-sans);
+  margin: 0;
+  padding: 0;
+}
+
+/* Garante que os títulos usem a fonte serifada por padrão se você quiser */
+.font-serif {
+  font-family: var(--font-serif);
+  font-feature-settings:
+    'ss01' on,
+    'liga' on,
+    'kern' on;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

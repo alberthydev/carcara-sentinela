@@ -1,18 +1,20 @@
 <template>
-  <div class="min-h-screen bg-carcara-creme text-carcara-marrom flex flex-col justify-between">
-    <header class="max-w-6xl mx-auto w-full px-6 py-8 flex flex-col justify-between flex-1">
-      <div class="flex justify-between items-center">
-        <div class="flex items-center gap-2">
+  <div
+    class="min-h-screen bg-carcara-creme text-carcara-marrom flex flex-col font-sans antialiased"
+  >
+    <header class="min-h-screen w-full px-12 md:px-20 py-12 flex flex-col justify-between">
+      <div class="flex justify-between items-center w-full">
+        <div class="flex items-center gap-4">
           <img
-            src="../assets/carcara.png"
+            src="../assets/img/carcara.png"
             alt="Logo Carcará Sentinela"
-            class="h-17 w-17 object-contain"
+            class="h-18 w-18 object-contain"
           />
-          <h1 class="text-5xl font-normal tracking-wide text-carcara-marrom font-serif">
+          <h1 class="text-5xl font-serif tracking-wide text-carcara-marrom">
             Carcará <span class="text-carcara-laranja font-medium">Sentinela</span>
           </h1>
         </div>
-        <nav class="flex gap-6 text-sm font-semibold">
+        <nav class="flex gap-8 text-2xl font-normal">
           <a
             href="#equipe"
             class="hover:text-carcara-laranja transition-colors underline decoration-carcara-laranja underline-offset-4"
@@ -23,104 +25,101 @@
         </nav>
       </div>
 
-      <div class="max-w-xl my-auto py-12">
-        <h2 class="text-5xl font-serif font-medium leading-tight mb-4 text-carcara-marrom">
+      <div class="max-w-4xl my-auto flex flex-col items-start gap-8 py-12">
+        <h2
+          class="text-7xl font-serif font-normal leading-tight text-carcara-marrom tracking-tight"
+        >
           Monitoramento que <span class="text-carcara-laranja">informa</span>.<br />
           Segurança que <span class="text-carcara-laranja">acolhe</span>.<br />
           Visão que <span class="text-carcara-laranja">antecipa</span>.
         </h2>
-        <p class="text-lg font-light text-gray-600 mb-8 leading-relaxed">
+        <p class="text-2xl font-semibold text-carcara-marrom leading-relaxed font-serif my-9">
           Um sistema feito sob medida para proteger quem ensina, quem aprende e quem visita.
         </p>
         <button
           @click="registry"
-          class="border border-carcara-laranja text-carcara-laranja text-xs font-bold uppercase tracking-widest px-8 py-3 rounded-none hover:bg-carcara-laranja hover:text-white transition-all duration-300"
+          class="border-2 border-carcara-laranja text-carcara-laranja text-xl font-medium uppercase tracking-widest px-6 py-4 rounded-none hover:bg-carcara-laranja hover:text-white transition-all duration-300 cursor-pointer"
         >
           Acessar o Sistema
         </button>
       </div>
+
+      <div class="hidden md:block"></div>
     </header>
 
-    <section id="sobre" class="bg-carcara-laranja text-white py-16 px-6">
-      <div class="max-w-4xl mx-auto text-center">
-        <div class="flex items-center justify-center gap-4 mb-6">
-          <div class="h-[1px] w-16 bg-white/50"></div>
-          <span class="text-sm tracking-widest uppercase font-light"
+    <section id="sobre" class="min-h-screen bg-carcara-laranja text-white flex items-center">
+      <div
+        class="min-h-screen w-full px-12 md:px-20 py-12 mx-auto text-center flex flex-col justify-center gap-12"
+      >
+        <div class="flex items-center justify-center gap-6">
+          <div class="h-[2px] w-60 bg-carcara-marrom"></div>
+          <span class="text-4xl tracking-widest font-serif font-normal text-carcara-marrom"
             >Acesso rápido, segurança total: o sentinela que não pisca.</span
           >
-          <div class="h-[1px] w-16 bg-white/50"></div>
+          <div class="h-[2px] w-60 bg-carcara-marrom"></div>
         </div>
 
-        <h3 class="text-6xl font-serif mb-6 text-carcara-marrom">Sobre</h3>
-        <p class="text-carcara-marrom text-lg font-light max-w-2xl mx-auto mb-12 leading-relaxed">
+        <h3 class="text-8xl mt-20 mb-14 font-serif text-carcara-marrom">Sobre</h3>
+
+        <p class="text-carcara-marrom text-xl font-normal max-w-3xl mx-auto leading-relaxed">
           Sistema inteligente de autenticação e controle de acesso veicular para instituições de
           ensino. Monitoramento em tempo real, segurança preventiva e transparência para toda a
           comunidade acadêmica.
         </p>
 
-        <div class="grid md:grid-cols-3 gap-6 text-left">
+        <div class="grid md:grid-cols-3 gap-8 text-left w-full max-w-6xl mx-auto mt-4">
           <div
-            class="bg-white p-6 rounded-lg border border-carcara-marrom shadow-sm text-carcara-marrom"
+            class="bg-white p-8 rounded-lg border border-carcara-marrom shadow-md text-carcara-marrom flex flex-col gap-3 min-h-[200px]"
           >
-            <h4 class="font-bold text-lg mb-2 text-carcara-marrom">Monitoramento LPR</h4>
-            <p class="text-sm font-light text-carcara-marrom">
+            <h4 class="font-bold text-2xl font-serif">Monitoramento LPR</h4>
+            <p class="text-base font-light text-carcara-marrom leading-relaxed">
               Integração com câmeras LPR para leitura automática de placas em tempo real.
             </p>
           </div>
 
           <div
-            class="bg-white p-6 rounded-lg shadow-sm text-carcara-marrom flex flex-col justify-between"
+            class="bg-white p-8 rounded-lg border border-carcara-marrom shadow-md text-carcara-marrom flex flex-col gap-3 min-h-[200px]"
           >
-            <div>
-              <h4 class="font-bold text-lg mb-2 text-carcara-marrom">Controle Inteligente</h4>
-              <p class="text-sm font-light text-gray-600 mb-4">
-                Identificação automática de veículos cadastrados e sistema de whitelist.
-              </p>
-            </div>
+            <h4 class="font-bold text-2xl font-serif">Controle Inteligente</h4>
+            <p class="text-base font-light text-carcara-marrom leading-relaxed">
+              Identificação automática de veículos cadastrados e sistema de whitelist.
+            </p>
           </div>
 
-          <div class="bg-white p-6 rounded-lg shadow-sm text-carcara-marrom">
-            <h4 class="font-bold text-lg mb-2 text-carcara-marrom">Gestão Simplificada</h4>
-            <p class="text-sm font-light text-gray-600">
+          <div
+            class="bg-white p-8 rounded-lg border border-carcara-marrom shadow-md text-carcara-marrom flex flex-col gap-3 min-h-[200px]"
+          >
+            <h4 class="font-bold text-2xl font-serif">Gestão Simplificada</h4>
+            <p class="text-base font-light text-carcara-marrom leading-relaxed">
               Cadastro fácil de veículos via app mobile para servidores, alunos e visitantes.
             </p>
           </div>
         </div>
-
-        <div
-          v-if="usersList.length > 0"
-          class="mt-12 bg-white/10 p-6 rounded-lg text-left text-carcara-marrom"
-        >
-          <h4 class="font-bold text-white mb-4">📋 Usuários na Whitelist (Banco de Dados):</h4>
-          <ul class="space-y-2 max-h-40 overflow-y-auto pr-2">
-            <li
-              v-for="v in usersList"
-              :key="v._id"
-              class="bg-white/90 p-2 rounded text-sm shadow-sm flex justify-between"
-            >
-              <span
-                ><strong>{{ v.nome }} {{ v.sobrenome }}</strong> (CPF: {{ v.cpf }})</span
-              >
-              <span class="text-xs text-gray-500">Matrícula: {{ v.matricula || 'Visitante' }}</span>
-            </li>
-          </ul>
-        </div>
       </div>
     </section>
 
-    <footer id="contato" class="bg-carcara-marrom text-carcara-creme py-16 px-6">
-      <div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-12">
-        <div>
-          <h3 class="text-3xl font-serif mb-4 text-carcara-creme">
+    <footer id="contato" class="bg-carcara-marrom text-carcara-creme py-20 px-6 w-full">
+      <div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-start">
+        <!-- Coluna esquerda: título + redes + info de contato + endereço -->
+        <div class="flex flex-col gap-8">
+          <h3 class="text-4xl font-serif leading-tight text-carcara-creme">
             Voe mais alto conosco.<br />Entre em contato.
           </h3>
-          <div class="flex gap-4 mt-8 text-xl opacity-80">
+
+          <div class="flex gap-5 text-xl opacity-80">
             <a
               href="https://instagram.com"
               target="_blank"
               class="hover:text-carcara-laranja text-carcara-creme transition-colors"
             >
               <Instagram class="w-6 h-6" />
+            </a>
+            <a
+              href="https://twitter.com"
+              target="_blank"
+              class="hover:text-carcara-laranja text-carcara-creme transition-colors"
+            >
+              <Twitter class="w-6 h-6" />
             </a>
             <a
               href="https://linkedin.com"
@@ -130,21 +129,54 @@
               <Linkedin class="w-6 h-6" />
             </a>
           </div>
+
+          <div class="grid grid-cols-2 gap-8 text-base font-light opacity-90">
+            <div class="flex flex-col gap-2">
+              <h4 class="font-bold uppercase tracking-wider text-carcara-laranja text-sm">
+                Informação de Contato
+              </h4>
+              <p>+55 22 93333-4444</p>
+              <p class="text-sm">info@carcara.com.br</p>
+              <p class="text-sm">info-proj@carcara.com.br</p>
+            </div>
+            <div class="flex flex-col gap-2">
+              <h4 class="font-bold uppercase tracking-wider text-carcara-laranja text-sm">
+                Endereço
+              </h4>
+              <p>SC-135, km 125 / S/n</p>
+              <p>Campo Experimental, Videira - SC,</p>
+              <p class="font-mono text-sm">89564-590</p>
+            </div>
+          </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-6 text-sm font-light opacity-90">
-          <div>
-            <h4 class="font-bold uppercase tracking-wider text-carcara-laranja mb-2">
-              Informação de Contatos
-            </h4>
-            <p>+55 49 3566-4444</p>
-            <p>info@carcara.com.br</p>
-          </div>
-          <div>
-            <h4 class="font-bold uppercase tracking-wider text-carcara-laranja mb-2">Endereço</h4>
-            <p>Rod. SC 135, Km 125 - S/N</p>
-            <p>Campo Experimental, Videira - SC</p>
-            <p>89564-590</p>
+        <!-- Coluna direita: formulário -->
+        <div class="flex flex-col gap-6 justify-end pt-4">
+          <input
+            v-model="form.email"
+            type="email"
+            placeholder="seuemail@seuemail.com"
+            class="bg-transparent border-b border-carcara-creme/40 py-3 text-carcara-creme placeholder-carcara-creme/50 outline-none focus:border-carcara-laranja transition-colors w-full"
+          />
+          <input
+            v-model="form.phone"
+            type="tel"
+            placeholder="+(55) 99 99999-9999"
+            class="bg-transparent border-b border-carcara-creme/40 py-3 text-carcara-creme placeholder-carcara-creme/50 outline-none focus:border-carcara-laranja transition-colors w-full"
+          />
+          <input
+            v-model="form.message"
+            type="text"
+            placeholder="Deixe sua mensagem para a nossa equipe"
+            class="bg-transparent border-b border-carcara-creme/40 py-3 text-carcara-creme placeholder-carcara-creme/50 outline-none focus:border-carcara-laranja transition-colors w-full"
+          />
+          <div class="flex justify-end mt-2">
+            <button
+              @click="submitForm"
+              class="bg-carcara-laranja text-white text-sm font-bold uppercase tracking-widest px-8 py-3 hover:opacity-90 transition-all cursor-pointer"
+            >
+              Enviar Formulário
+            </button>
           </div>
         </div>
       </div>
@@ -153,34 +185,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { Instagram, Linkedin, Shield } from 'lucide-vue-next'
-import XIcon from './components/XIcon.vue'
-
-interface User {
-  _id: string
-  matricula?: string
-  nome: string
-  sobrenome: string
-  cpf: string
-}
+import { Instagram, Linkedin, Twitter } from 'lucide-vue-next'
 
 const router = useRouter()
-const usersList = ref<User[]>([])
+
+const form = reactive({
+  email: '',
+  phone: '',
+  message: '',
+})
 
 const registry = () => {
   router.push('/userRegistry')
 }
 
-const buscarTodos = async () => {
-  try {
-    const resposta = await fetch('http://localhost:3000/api/users/todos')
-    const dados = await resposta.json()
-    usersList.value = dados
-  } catch (erro) {
-    console.error('Erro ao buscar dados da API')
-  }
+const submitForm = () => {
+  // handle form submission
+  console.log('Form submitted:', form)
 }
 </script>
 
