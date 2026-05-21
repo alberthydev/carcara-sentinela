@@ -37,7 +37,7 @@
           Um sistema feito sob medida para proteger quem ensina, quem aprende e quem visita.
         </p>
         <button
-          @click="registry"
+          @click="login"
           class="border-2 border-carcara-laranja text-carcara-laranja text-xl font-medium uppercase tracking-widest px-6 py-4 rounded-none hover:bg-carcara-laranja hover:text-white transition-all duration-300 cursor-pointer"
         >
           Acessar o Sistema
@@ -47,7 +47,7 @@
       <div class="hidden md:block"></div>
     </header>
 
-    <section id="sobre" class="min-h-screen bg-carcara-laranja text-white flex items-center">
+    <section id="sobre" class="min-h-screen bg-carcara-laranja-bg text-white flex items-center">
       <div
         class="min-h-screen w-full px-12 md:px-20 py-12 mx-auto text-center flex flex-col justify-center gap-12"
       >
@@ -197,8 +197,8 @@ const form = reactive({
   message: '',
 })
 
-const registry = () => {
-  router.push('/userRegistry')
+const login = () => {
+  router.push('/login')
 }
 
 const submitForm = () => {

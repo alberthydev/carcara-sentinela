@@ -14,8 +14,9 @@ html {
 
 @theme {
   --color-carcara-creme: #faf3ee;
-  --color-carcara-laranja: #f59e53;
+  --color-carcara-laranja: #fd7917;
   --color-carcara-marrom: #4a2e1b;
+  --color-carcara-laranja-bg: #fd9e50;
 
   --font-serif: 'Playfair Display Local', serif;
   --font-sans: 'Inter', sans-serif;
