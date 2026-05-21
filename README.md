@@ -6,7 +6,8 @@
 <br>
 <br>
 <img src="carcara.png" style="width: 150px">
-<img src="logo_2.png" style="width: 150px">
+<br>
+<img src="logo_2.png" style="width: 500px">
 
 ### Sistema de Autenticação e Controle de Acesso de Veículos em Instituições Federais de Ensino
 
