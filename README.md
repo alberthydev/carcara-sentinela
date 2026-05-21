@@ -6,8 +6,7 @@
 <br>
 <br>
 <img src="carcara.png" style="width: 150px">
-
-# CARCARÁ SENTINELA
+<img src="logo_2.png" style="width: 150px">
 
 ### Sistema de Autenticação e Controle de Acesso de Veículos em Instituições Federais de Ensino
 
