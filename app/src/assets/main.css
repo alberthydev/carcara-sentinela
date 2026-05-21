@@ -1,0 +1,26 @@
+@import 'tailwindcss';
+
+/* Importando as fontes direto do Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+
+@theme {
+  --color-carcara-creme: #faf3ee;
+  --color-carcara-laranja: #f59e53;
+  --color-carcara-marrom: #4a2e1b;
+
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Inter', sans-serif;
+}
+
+body {
+  background-color: var(--color-carcara-creme);
+  color: var(--color-carcara-marrom);
+  font-family: var(--font-sans);
+  margin: 0;
+  padding: 0;
+}
+
+/* Garante que os títulos usem a fonte serifada por padrão se você quiser */
+.font-serif {
+  font-family: 'Playfair Display';
+}
