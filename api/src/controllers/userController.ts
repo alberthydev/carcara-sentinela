@@ -66,3 +66,28 @@ export const usersList = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ erro: "Erro ao buscar usuário." });
   }
 };
+
+export const loginUser = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { cpf, password } = req.body;
+    
+    // 1. Busca o usuário pelo CPF
+    const user = await User.findOne({ cpf });
+    if (!user) {
+      res.status(401).json({ erro: "CPF ou senha inválidos." });
+      return;
+    }
+
+    // 2. Compara a senha digitada com o hash no banco
+    const senhaCorreta = await bcrypt.compare(password, user.senha);
+    if (!senhaCorreta) {
+      res.status(401).json({ erro: "CPF ou senha inválidos." });
+      return;
+    }
+
+    // 3. Sucesso!
+    res.status(200).json({ mensagem: "Login realizado com sucesso!", userId: user._id });
+  } catch (erro) {
+    res.status(500).json({ erro: "Erro interno no servidor." });
+  }
+};

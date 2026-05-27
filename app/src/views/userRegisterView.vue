@@ -168,14 +168,29 @@
         </div>
 
         <div class="flex flex-col items-center gap-2 mb-6 text-center">
-          <div
-            class="relative w-24 h-24 rounded-full bg-white/20 border-2 border-dashed border-white/40 flex flex-col items-center justify-center p-2 cursor-pointer hover:bg-white/30 transition-all"
-          >
-            <span class="text-[10px] font-medium leading-tight opacity-90"
-              >Defina uma imagem de perfil</span
-            >
-          </div>
-        </div>
+  <!-- O clique na div abaixo vai focar no input -->
+  <div
+    class="relative w-24 h-24 rounded-full bg-white/20 border-2 border-dashed border-white/40 flex flex-col items-center justify-center p-2 cursor-pointer hover:bg-white/30 transition-all overflow-hidden"
+    @click="$refs.fotoInput.focus()"
+  >
+    <span v-if="!form.fotoUrl" class="text-[10px] font-medium leading-tight opacity-90 text-center">
+      Defina uma imagem
+    </span>
+    <span v-else class="text-[10px] font-bold text-carcara-marrom break-all text-center">
+      {{ form.fotoUrl }}
+    </span>
+  </div>
+
+  <!-- Input visível ou levemente estilizado para garantir o clique -->
+  <input
+    ref="fotoInput"
+    v-model="form.fotoUrl"
+    type="text"
+    placeholder="nome_da_foto.png"
+    class="w-full mt-2 text-xs border border-gray-300 rounded p-1 text-center"
+    required
+  />
+</div>
 
         <form
           @submit.prevent="realizarCadastro"

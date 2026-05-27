@@ -157,10 +157,29 @@ const loginForm = reactive({
 
 } */
 
-const handleLogin = () => {
-  // Lógica de autenticação futura será centralizada aqui
-  console.log('Dados de login submetidos:', loginForm)
-}
+const handleLogin = async () => {
+  try {
+    const resposta = await fetch('http://localhost:3000/api/users/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cpf: loginForm.cpf,
+        password: loginForm.password
+      })
+    });
+
+    const dados = await resposta.json();
+
+    if (resposta.ok) {
+      alert("Login efetuado com sucesso!");
+      router.push('/home'); // Ou para onde você quer mandar o usuário logado
+    } else {
+      alert(dados.erro || "Falha ao entrar.");
+    }
+  } catch (erro) {
+    alert("Erro de conexão com o servidor.");
+  }
+};
 
 const goToRegistry = () => {
   router.push('/register')

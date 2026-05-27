@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { registryUser, usersList } from '../controllers/userController';
+import { registryUser, usersList, loginUser } from '../controllers/userController';
 import { Estudante } from '../models/Estudante';
 
 const router = Router();
@@ -33,5 +33,6 @@ router.post('/admin/mock-estudante', async (req, res) => {
     res.status(500).send("Erro ao mockar dados");
   }
 });
+router.post('/login', loginUser);
 
 export default router;
