@@ -33,10 +33,8 @@ export const googleAuth = async (
     const nomeCompleto = payload.name || "";
     const fotoUrl = payload.picture || "";
 
-    // 1. Tenta buscar o usuário pelo e-mail do Google primeiro (vínculo já existente)
     let usuario = await User.findOne({ email: email });
 
-    // 2. Se não achou por e-mail, mas o usuário digitou o CPF na tela de vínculo posterior
     if (!usuario && cpf) {
       usuario = await User.findOne({ cpf: cpf.trim() });
 
@@ -45,18 +43,16 @@ export const googleAuth = async (
         usuario.email = email;
         if (fotoUrl) usuario.fotoUrl = fotoUrl;
         await usuario.save();
-        console.log(`🔗 E-mail ${email} vinculado com sucesso ao CPF ${cpf}`);
+        console.log(`E-mail ${email} vinculado com sucesso ao CPF ${cpf}`);
       } else {
-        // Se nem o CPF existia, criamos o usuário do zero (Fluxo de Registro)
         console.log(
-          `👤 Criando novo perfil de [${tipo || "visitante"}] via primeiro acesso Google para: ${email}`,
+          `Criando novo perfil de [${tipo || "visitante"}] via primeiro acesso Google para: ${email}`,
         );
 
         const partesNome = nomeCompleto.split(" ");
         const nome = partesNome[0];
         const sobrenome = partesNome.slice(1).join(" ") || " ";
 
-        // Lógica de validação do IFC caso seja aluno/servidor
         if (tipo === "aluno" || tipo === "servidor") {
           const dadosAcademicos = await Estudante.findOne({ cpf: cpf.trim() });
           if (!dadosAcademicos) {
@@ -77,7 +73,6 @@ export const googleAuth = async (
             ativo: true,
           });
         } else {
-          // Visitante
           usuario = await User.create({
             cpf: cpf.trim(),
             nome: nome,
@@ -91,9 +86,7 @@ export const googleAuth = async (
       }
     }
 
-    // 3. Se não achou por e-mail E o usuário não mandou CPF (é o primeiro clique dele no Login)
     if (!usuario && !cpf) {
-      // Retornamos 202 (Aceito, mas incompleto) sinalizando que o frontend precisa pedir o CPF
       res.status(202).json({
         vinculoPendente: true,
         mensagem:
@@ -103,7 +96,6 @@ export const googleAuth = async (
       return;
     }
 
-    // 4. Se chegou aqui, o usuário existe (achou por e-mail ou acabou de vincular/criar)
     res.status(200).json({
       mensagem: "Autenticação realizada com sucesso!",
       usuario: {
@@ -115,7 +107,7 @@ export const googleAuth = async (
       },
     });
   } catch (error: any) {
-    console.error("❌ Erro no controlador de auth do Google:", error.message);
+    console.error("Erro no controlador de auth do Google:", error.message);
     res.status(401).json({ erro: "Token do Google inválido ou expirado." });
   }
 };
@@ -199,7 +191,6 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // 1. Busca o usuário pelo CPF
     const user = await User.findOne({ cpf: cpfNormalizado });
     if (!user) {
       res.status(401).json({ erro: "CPF ou senha inválidos." });
@@ -211,14 +202,12 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // 2. Compara a senha digitada com o hash no banco
     const senhaCorreta = await bcrypt.compare(senhaInformada, user.senha);
     if (!senhaCorreta) {
       res.status(401).json({ erro: "CPF ou senha inválidos." });
       return;
     }
 
-    // 3. Sucesso!
     res.status(200).json({ mensagem: "Login realizado com sucesso!", userId: user._id });
   } catch (erro) {
     console.error("Erro no login:", erro);
