@@ -3,6 +3,26 @@
     <div
       class="w-full lg:w-1/2 min-h-screen flex flex-col justify-between items-center px-8 sm:px-16 lg:px-20 py-12 bg-white"
     >
+      <a
+        href="http://localhost:5173/login"
+        class="absolute top-6 left-6 flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-carcara-laranja transition-colors group z-10"
+      >
+        <svg
+          class="h-5 w-5 transform group-hover:-translate-x-1 transition-transform"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M10 19l-7-7m0 0l7-7m-7 7h18"
+          />
+        </svg>
+
+        Voltar para o login
+      </a>
       <div class="w-full flex flex-col items-center gap-2 text-center relative">
         <button
           type="button"
@@ -125,7 +145,8 @@
         <div class="w-full flex flex-col gap-3 mb-6">
           <button
             type="button"
-            class="w-full flex items-center justify-center gap-3 border border-gray-200 py-3 px-4 rounded-lg text-sm font-medium hover:bg-orange-400 transition-colors cursor-pointer"
+            @click="loginComGoogle"
+            class="w-full flex items-center justify-center gap-3 bg-white text-carcara-marrom py-3 px-4 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors cursor-pointer"
           >
             <svg class="h-5 w-5" viewBox="0 0 24 24">
               <path
@@ -145,19 +166,33 @@
                 d="M12 23c3.24 0 5.97-1.08 7.96-2.9l-3.6-2.8c-1.1.74-2.52 1.18-4.36 1.18-3.22 0-6-2.01-6.97-4.96l-3.6 2.8C3.39 20.35 7.35 23 12 23z"
               />
             </svg>
-            Continuar com Google
+            Cadastrar com Google
           </button>
 
           <button
             type="button"
-            class="w-full flex items-center justify-center gap-3 bg-black text-white py-3 px-4 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors cursor-pointer"
+            class="w-full flex items-center justify-center gap-3 bg-white text-carcara-marrom border border-gray-200 py-3 px-4 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors cursor-pointer"
           >
-            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-              <path
-                d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.21.67-2.93 1.49-.63.73-1.18 1.87-1.03 2.97 1.12.09 2.27-.57 2.97-1.4M"
-              />
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <g clip-path="url(#clip0_268_220)">
+                <path d="M7.60413 7.60413H0V0H7.60413V7.60413Z" fill="#F1511B" />
+                <path d="M16.0001 7.60413H8.396V0H16.0001V7.60413Z" fill="#80CC28" />
+                <path d="M7.60394 16.0001H0V8.396H7.60394V16.0001Z" fill="#00ADEF" />
+                <path d="M16.0001 16.0001H8.396V8.396H16.0001V16.0001Z" fill="#FBBC09" />
+              </g>
+              <defs>
+                <clipPath id="clip0_268_220">
+                  <rect width="16" height="16" fill="white" />
+                </clipPath>
+              </defs>
             </svg>
-            Continuar com Apple
+            Continuar com Microsoft
           </button>
         </div>
 
@@ -251,7 +286,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -271,7 +306,6 @@ const tipoAlerta = ref('')
 const carregando = ref(false)
 const validadoNoIFC = ref(false)
 
-// Reseta estados quando o tipo de perfil muda (idêntico ao seu watch anterior)
 watch(
   () => form.value.tipo,
   () => {
@@ -326,7 +360,7 @@ const validarComIFC = async () => {
       tipoAlerta.value = 'erro'
     }
   } catch (err) {
-    mensagem.value = 'Erro ao consultar o Sistema IFC.'
+    mensagem.value = `Erro ao consultar o Sistema IFC. info=${err.message}`
     tipoAlerta.value = 'erro'
   }
 }
@@ -382,10 +416,120 @@ const realizarCadastro = async () => {
       tipoAlerta.value = 'erro'
     }
   } catch (erro) {
-    mensagem.value = 'Erro de conexão. A API está ligada no Docker?'
+    mensagem.value = `Erro de conexão. A API está ligada no Docker? error: ${erro}`
     tipoAlerta.value = 'erro'
   } finally {
     carregando.value = false
+  }
+}
+
+interface GoogleAuthResponse {
+  credential: string
+  client_id: string
+}
+
+const handleCredentialResponse = async (response: GoogleAuthResponse) => {
+  if (!form.value.cpf) {
+    mensagem.value = 'Por favor, digite o seu CPF antes de continuar com o Google.'
+    tipoAlerta.value = 'erro'
+    return
+  }
+
+  carregando.value = true
+  mensagem.value = ''
+
+  try {
+    const tokenGoogle = response.credential
+
+    const respostaBackend = await fetch('http://localhost:3000/api/users/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: tokenGoogle,
+        tipo: form.value.tipo,
+        cpf: form.value.cpf,
+      }),
+    })
+
+    const dados = await respostaBackend.json()
+
+    if (respostaBackend.ok) {
+      mensagem.value = 'Autenticação com Google realizada com sucesso!'
+      tipoAlerta.value = 'sucesso'
+
+      if (dados.usuario) {
+        const partesNome = dados.usuario.nome.split(' ')
+        form.value.nome = partesNome[0]
+        form.value.sobrenome = partesNome.slice(1).join(' ') || ''
+        form.value.fotoUrl = dados.usuario.fotoUrl || ''
+      }
+
+      setTimeout(() => {
+        router.push('/login')
+      }, 2000)
+    } else {
+      mensagem.value = dados.erro || 'Erro ao processar login com Google.'
+      tipoAlerta.value = 'erro'
+    }
+  } catch (error) {
+    mensagem.value = `Falha na comunicação com o servidor backend. type=${error.message}`
+    tipoAlerta.value = 'erro'
+  } finally {
+    carregando.value = false
+  }
+}
+
+onMounted(() => {
+  const clientIdReal = String(import.meta.env.VITE_GOOGLE_CLIENT_ID).trim()
+
+  console.log('DEBUG CLIENT ID FIXO:', clientIdReal)
+
+  const inicializarGoogleAuth = () => {
+    // @ts-expect-error : google é definido no script externo
+    if (typeof google !== 'undefined' && google.accounts?.id) {
+      try {
+        // @ts-expect-error : google.accounts.id.initialize é definido no script externo
+        google.accounts.id.initialize({
+          client_id: clientIdReal,
+          callback: handleCredentialResponse,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        })
+
+        console.log('Google Auth inicializado com sucesso no script!')
+      } catch (err) {
+        console.error('Erro interno ao rodar o initialize do Google:', err)
+      }
+    }
+  }
+
+  setTimeout(() => {
+    inicializarGoogleAuth()
+  }, 200)
+})
+
+const loginComGoogle = () => {
+  if (!form.value.tipo) {
+    alert('Por favor, selecione seu perfil antes de continuar com o Google!')
+    return
+  }
+
+  if (!form.value.cpf) {
+    alert('Por favor, insira o seu CPF antes de continuar com o Google!')
+    return
+  }
+
+  if ((form.value.tipo === 'aluno' || form.value.tipo === 'servidor') && !validadoNoIFC.value) {
+    alert('Por favor, valide sua identidade no Sistema IFC antes de vincular sua conta Google.')
+    return
+  }
+
+  // @ts-expect-error : google.accounts.id.prompt é definido no script externo
+  if (typeof google !== 'undefined') {
+    // @ts-expect-error : google.accounts.id.prompt é definido no script externo do Google, mas o ESLint não consegue detectar
+    google.accounts.id.prompt()
+  } else {
+    alert('Erro ao carregar SDK do Google. Verifique sua conexão.')
   }
 }
 

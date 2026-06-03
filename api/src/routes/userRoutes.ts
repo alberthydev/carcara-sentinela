@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { registryUser, usersList } from "../controllers/userController";
+import {
+  registryUser,
+  usersList,
+  googleAuth,
+} from "../controllers/userController";
 import { Estudante } from "../models/Estudante";
 import { OAuth2Client } from "google-auth-library";
 import dotenv from "dotenv";
@@ -45,35 +49,6 @@ const client = new OAuth2Client(
   process.env.GOOGLE_CLIENT_SECRET,
 );
 
-router.post("/auth/google", async (req, res) => {
-  const { token, tipo } = req.body;
-
-  try {
-    const ticket = await client.verifyIdToken({
-      idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-
-    const payload = ticket.getPayload();
-
-    if (!payload) {
-      return res
-        .status(401)
-        .json({ erro: "Não foi possível extrair dados do perfil do Google" });
-    }
-
-    const email = payload.email;
-    const nomeCompleto = payload.name;
-    const fotoUrl = payload.picture;
-
-    return res
-      .status(200)
-      .json({ mensagem: "Usuário autenticado!", email, nomeCompleto });
-  } catch (error) {
-    return res
-      .status(401)
-      .json({ erro: "Token do Google inválido ou expirado." });
-  }
-});
+router.post("/auth/google", googleAuth);
 
 export default router;
