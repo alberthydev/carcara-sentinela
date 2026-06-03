@@ -1,8 +1,28 @@
 <template>
-  <div class="min-h-screen w-full bg-carcara-white flex font-sans antialiased text-carcara-marrom">
+  <div class="min-h-screen w-full bg-[#fafafa] flex font-sans antialiased text-carcara-marrom">
     <div
-      class="w-full lg:w-1/2 min-h-screen flex flex-col justify-between items-center px-8 sm:px-16 lg:px-20 py-12 bg-carcara-white"
+      class="w-full lg:w-1/2 min-h-screen flex flex-col justify-between items-center px-8 sm:px-16 lg:px-20 py-12 bg-white"
     >
+      <a
+        href="http://localhost:5173/login"
+        class="absolute top-6 left-6 flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-carcara-laranja transition-colors group z-10"
+      >
+        <svg
+          class="h-5 w-5 transform group-hover:-translate-x-1 transition-transform"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M10 19l-7-7m0 0l7-7m-7 7h18"
+          />
+        </svg>
+
+        Voltar para o login
+      </a>
       <div class="w-full flex flex-col items-center gap-2 text-center relative">
         <button
           type="button"
@@ -11,18 +31,19 @@
         >
           Mock Admin
         </button>
+
         <img
           src="../assets/img/carcara.png"
           alt="Logo Carcará Sentinela"
           class="h-35 w-35 object-contain"
         />
-        <h1 class="text-5xl font-serif tracking-wide text-carcara-marrom">
+        <h1 class="text-6xl font-serif tracking-wide text-carcara-marrom">
           Carcará <span class="text-carcara-laranja font-medium">Sentinela</span>
         </h1>
         <p class="text-sm font-serif tracking-wider text-carcara-laranja">
           Visão que antecipa. Monitoramento que informa
         </p>
-        <div class="h-[2px] w-35 bg-carcara-laranja my-8"></div>
+        <div class="h-[2px] w-35 bg-carcara-laranja mt-10"></div>
       </div>
 
       <div class="w-full max-w-md my-auto flex flex-col gap-6 text-left">
@@ -121,10 +142,11 @@
           'opacity-30 pointer-events-none select-none': form.tipo !== 'visitante' && !validadoNoIFC,
         }"
       >
-        <div class="w-full flex flex-col gap-3 mb-6 text-carcara-marrom">
+        <div class="w-full flex flex-col gap-3 mb-6">
           <button
             type="button"
-            class="w-full flex items-center justify-center gap-3 border border-gray-200 bg-gray-50 py-3 px-4 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors cursor-pointer"
+            @click="loginComGoogle"
+            class="w-full flex items-center justify-center gap-3 bg-white text-carcara-marrom py-3 px-4 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors cursor-pointer"
           >
             <svg class="h-5 w-5" viewBox="0 0 24 24">
               <path
@@ -144,18 +166,31 @@
                 d="M12 23c3.24 0 5.97-1.08 7.96-2.9l-3.6-2.8c-1.1.74-2.52 1.18-4.36 1.18-3.22 0-6-2.01-6.97-4.96l-3.6 2.8C3.39 20.35 7.35 23 12 23z"
               />
             </svg>
-            Continuar com Google
+            Cadastrar com Google
           </button>
 
           <button
             type="button"
-            class="w-full flex items-center justify-center border-gray-200 border-1 gap-3 bg-gray-50 py-3 px-4 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors cursor-pointer"
+            class="w-full flex items-center justify-center gap-3 bg-white text-carcara-marrom border border-gray-200 py-3 px-4 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors cursor-pointer"
           >
-            <svg class="h-5 w-5" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M0 0H11V11H0V0Z" fill="#F25022" />
-              <path d="M12 0H23V11H12V0Z" fill="#7FBA00" />
-              <path d="M0 12H11V23H0V12Z" fill="#00A4EF" />
-              <path d="M12 12H23V23H12V12Z" fill="#FFB900" />
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <g clip-path="url(#clip0_268_220)">
+                <path d="M7.60413 7.60413H0V0H7.60413V7.60413Z" fill="#F1511B" />
+                <path d="M16.0001 7.60413H8.396V0H16.0001V7.60413Z" fill="#80CC28" />
+                <path d="M7.60394 16.0001H0V8.396H7.60394V16.0001Z" fill="#00ADEF" />
+                <path d="M16.0001 16.0001H8.396V8.396H16.0001V16.0001Z" fill="#FBBC09" />
+              </g>
+              <defs>
+                <clipPath id="clip0_268_220">
+                  <rect width="16" height="16" fill="white" />
+                </clipPath>
+              </defs>
             </svg>
             Continuar com Microsoft
           </button>
@@ -168,29 +203,14 @@
         </div>
 
         <div class="flex flex-col items-center gap-2 mb-6 text-center">
-  <!-- O clique na div abaixo vai focar no input -->
-  <div
-    class="relative w-24 h-24 rounded-full bg-white/20 border-2 border-dashed border-white/40 flex flex-col items-center justify-center p-2 cursor-pointer hover:bg-white/30 transition-all overflow-hidden"
-    @click="$refs.fotoInput.focus()"
-  >
-    <span v-if="!form.fotoUrl" class="text-[10px] font-medium leading-tight opacity-90 text-center">
-      Defina uma imagem
-    </span>
-    <span v-else class="text-[10px] font-bold text-carcara-marrom break-all text-center">
-      {{ form.fotoUrl }}
-    </span>
-  </div>
-
-  <!-- Input visível ou levemente estilizado para garantir o clique -->
-  <input
-    ref="fotoInput"
-    v-model="form.fotoUrl"
-    type="text"
-    placeholder="nome_da_foto.png"
-    class="w-full mt-2 text-xs border border-gray-300 rounded p-1 text-center"
-    required
-  />
-</div>
+          <div
+            class="relative w-24 h-24 rounded-full bg-white/20 border-2 border-dashed border-white/40 flex flex-col items-center justify-center p-2 cursor-pointer hover:bg-white/30 transition-all"
+          >
+            <span class="text-[10px] font-medium leading-tight opacity-90"
+              >Defina uma imagem de perfil</span
+            >
+          </div>
+        </div>
 
         <form
           @submit.prevent="realizarCadastro"
@@ -248,7 +268,7 @@
           <button
             type="submit"
             :disabled="carregando"
-            class="w-full bg-carcara-marrom text-white font-semibold py-3.5 px-4 rounded-lg mt-2 shadow-md hover:bg-amber-900 disabled:bg-carcara-marrom/50 disabled:cursor-not-allowed transition-all cursor-pointer text-center"
+            class="w-full bg-carcara-marrom text-white font-semibold py-3.5 px-4 rounded-lg mt-2 shadow-md hover:opacity-95 disabled:bg-carcara-marrom/50 disabled:cursor-not-allowed transition-all cursor-pointer text-center"
           >
             {{ carregando ? 'Enviando...' : 'Concluir Cadastro' }}
           </button>
@@ -266,7 +286,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -286,7 +306,6 @@ const tipoAlerta = ref('')
 const carregando = ref(false)
 const validadoNoIFC = ref(false)
 
-// Reseta estados quando o tipo de perfil muda (idêntico ao seu watch anterior)
 watch(
   () => form.value.tipo,
   () => {
@@ -341,7 +360,7 @@ const validarComIFC = async () => {
       tipoAlerta.value = 'erro'
     }
   } catch (err) {
-    mensagem.value = 'Erro ao consultar o Sistema IFC.'
+    mensagem.value = `Erro ao consultar o Sistema IFC. info=${err.message}`
     tipoAlerta.value = 'erro'
   }
 }
@@ -397,10 +416,120 @@ const realizarCadastro = async () => {
       tipoAlerta.value = 'erro'
     }
   } catch (erro) {
-    mensagem.value = 'Erro de conexão. A API está ligada no Docker?'
+    mensagem.value = `Erro de conexão. A API está ligada no Docker? error: ${erro}`
     tipoAlerta.value = 'erro'
   } finally {
     carregando.value = false
+  }
+}
+
+interface GoogleAuthResponse {
+  credential: string
+  client_id: string
+}
+
+const handleCredentialResponse = async (response: GoogleAuthResponse) => {
+  if (!form.value.cpf) {
+    mensagem.value = 'Por favor, digite o seu CPF antes de continuar com o Google.'
+    tipoAlerta.value = 'erro'
+    return
+  }
+
+  carregando.value = true
+  mensagem.value = ''
+
+  try {
+    const tokenGoogle = response.credential
+
+    const respostaBackend = await fetch('http://localhost:3000/api/users/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: tokenGoogle,
+        tipo: form.value.tipo,
+        cpf: form.value.cpf,
+      }),
+    })
+
+    const dados = await respostaBackend.json()
+
+    if (respostaBackend.ok) {
+      mensagem.value = 'Autenticação com Google realizada com sucesso!'
+      tipoAlerta.value = 'sucesso'
+
+      if (dados.usuario) {
+        const partesNome = dados.usuario.nome.split(' ')
+        form.value.nome = partesNome[0]
+        form.value.sobrenome = partesNome.slice(1).join(' ') || ''
+        form.value.fotoUrl = dados.usuario.fotoUrl || ''
+      }
+
+      setTimeout(() => {
+        router.push('/login')
+      }, 2000)
+    } else {
+      mensagem.value = dados.erro || 'Erro ao processar login com Google.'
+      tipoAlerta.value = 'erro'
+    }
+  } catch (error) {
+    mensagem.value = `Falha na comunicação com o servidor backend. type=${error.message}`
+    tipoAlerta.value = 'erro'
+  } finally {
+    carregando.value = false
+  }
+}
+
+onMounted(() => {
+  const clientIdReal = String(import.meta.env.VITE_GOOGLE_CLIENT_ID).trim()
+
+  console.log('DEBUG CLIENT ID FIXO:', clientIdReal)
+
+  const inicializarGoogleAuth = () => {
+    // @ts-expect-error : google é definido no script externo
+    if (typeof google !== 'undefined' && google.accounts?.id) {
+      try {
+        // @ts-expect-error : google.accounts.id.initialize é definido no script externo
+        google.accounts.id.initialize({
+          client_id: clientIdReal,
+          callback: handleCredentialResponse,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        })
+
+        console.log('Google Auth inicializado com sucesso no script!')
+      } catch (err) {
+        console.error('Erro interno ao rodar o initialize do Google:', err)
+      }
+    }
+  }
+
+  setTimeout(() => {
+    inicializarGoogleAuth()
+  }, 200)
+})
+
+const loginComGoogle = () => {
+  if (!form.value.tipo) {
+    alert('Por favor, selecione seu perfil antes de continuar com o Google!')
+    return
+  }
+
+  if (!form.value.cpf) {
+    alert('Por favor, insira o seu CPF antes de continuar com o Google!')
+    return
+  }
+
+  if ((form.value.tipo === 'aluno' || form.value.tipo === 'servidor') && !validadoNoIFC.value) {
+    alert('Por favor, valide sua identidade no Sistema IFC antes de vincular sua conta Google.')
+    return
+  }
+
+  // @ts-expect-error : google.accounts.id.prompt é definido no script externo
+  if (typeof google !== 'undefined') {
+    // @ts-expect-error : google.accounts.id.prompt é definido no script externo do Google, mas o ESLint não consegue detectar
+    google.accounts.id.prompt()
+  } else {
+    alert('Erro ao carregar SDK do Google. Verifique sua conexão.')
   }
 }
 
