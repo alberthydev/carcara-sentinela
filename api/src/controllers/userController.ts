@@ -13,7 +13,7 @@ export const googleAuth = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  const { token, tipo, cpf } = req.body; // cpf agora é opcional aqui
+  const { token, tipo, cpf } = req.body;
 
   try {
     const ticket = await client.verifyIdToken({
