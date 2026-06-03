@@ -262,7 +262,7 @@ const handleLogin = async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         cpf: loginForm.cpf,
-        senha: loginForm.password,
+        password: loginForm.password,
       }),
     })
 

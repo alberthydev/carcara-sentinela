@@ -2,10 +2,10 @@ import { Router } from "express";
 import {
   registryUser,
   usersList,
+  loginUser,
   googleAuth,
 } from "../controllers/userController";
 import { Estudante } from "../models/Estudante";
-import { OAuth2Client } from "google-auth-library";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -43,11 +43,7 @@ router.post("/admin/mock-estudante", async (req, res) => {
     res.status(500).send("Erro ao mockar dados");
   }
 });
-
-const client = new OAuth2Client(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-);
+router.post('/login', loginUser);
 
 router.post("/auth/google", googleAuth);
 
