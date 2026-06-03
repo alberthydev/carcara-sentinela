@@ -7,9 +7,17 @@ import {
 } from "../controllers/userController";
 import { Estudante } from "../models/Estudante";
 import dotenv from "dotenv";
+import rateLimit from "express-rate-limit";
 dotenv.config();
 
 const router = Router();
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { erro: "Muitas tentativas de login. Tente novamente em alguns minutos." },
+});
 
 router.get("/todos", usersList);
 router.get("/validar-ifc/:cpf/:matricula", async (req, res) => {
@@ -43,8 +51,8 @@ router.post("/admin/mock-estudante", async (req, res) => {
     res.status(500).send("Erro ao mockar dados");
   }
 });
-router.post('/login', loginUser);
+router.post("/login", authLimiter, loginUser);
 
-router.post("/auth/google", googleAuth);
+router.post("/auth/google", authLimiter, googleAuth);
 
 export default router;

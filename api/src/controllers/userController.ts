@@ -186,9 +186,21 @@ export const usersList = async (req: Request, res: Response): Promise<void> => {
 export const loginUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const { cpf, password } = req.body;
-    
+    if (typeof cpf !== "string" || typeof password !== "string") {
+      res.status(400).json({ erro: "Dados de login inválidos." });
+      return;
+    }
+
+    const cpfNormalizado = cpf.trim();
+    const senhaInformada = password.trim();
+
+    if (!cpfNormalizado || !senhaInformada) {
+      res.status(400).json({ erro: "Dados de login inválidos." });
+      return;
+    }
+
     // 1. Busca o usuário pelo CPF
-    const user = await User.findOne({ cpf });
+    const user = await User.findOne({ cpf: cpfNormalizado });
     if (!user) {
       res.status(401).json({ erro: "CPF ou senha inválidos." });
       return;
@@ -200,7 +212,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
     }
 
     // 2. Compara a senha digitada com o hash no banco
-    const senhaCorreta = await bcrypt.compare(password, user.senha);
+    const senhaCorreta = await bcrypt.compare(senhaInformada, user.senha);
     if (!senhaCorreta) {
       res.status(401).json({ erro: "CPF ou senha inválidos." });
       return;
@@ -209,6 +221,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
     // 3. Sucesso!
     res.status(200).json({ mensagem: "Login realizado com sucesso!", userId: user._id });
   } catch (erro) {
+    console.error("Erro no login:", erro);
     res.status(500).json({ erro: "Erro interno no servidor." });
   }
 };
