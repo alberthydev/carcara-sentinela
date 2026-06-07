@@ -208,7 +208,16 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    res.status(200).json({ mensagem: "Login realizado com sucesso!", userId: user._id });
+    res.status(200).json({ 
+      mensagem: "Login realizado com sucesso!", 
+      usuario: {
+        id: user._id,
+        nome: `${user.nome} ${user.sobrenome}`,
+        cpf: user.cpf,
+        tipo: user.tipo, // O tipo (visitante, aluno, servidor) agora vai para o Front-end
+        fotoUrl: user.fotoUrl
+      }
+    });
   } catch (erro) {
     console.error("Erro no login:", erro);
     res.status(500).json({ erro: "Erro interno no servidor." });
