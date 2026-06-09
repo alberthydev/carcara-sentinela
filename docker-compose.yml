@@ -1,10 +1,17 @@
 services:
+  banco_dados:
+    image: mongo:5.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
   api:
-    build: .
+    build: ./api
     ports:
       - "3000:3000"
     volumes:
-      - .:/usr/src/app
+      - ./api:/usr/src/app
       - /usr/src/app/node_modules
     environment:
       - PORT=3000
@@ -13,12 +20,12 @@ services:
       - banco_dados
     command: npm run dev
 
-  banco_dados:
-    image: mongo:5.0
+  app:
+    build: ./app
     ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
+      - "80:80"
+    depends_on:
+      - api
 
 volumes:
   mongo_data:

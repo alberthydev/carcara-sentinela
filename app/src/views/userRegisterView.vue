@@ -4,9 +4,10 @@
       class="w-full lg:w-1/2 min-h-screen flex flex-col justify-between items-center px-8 sm:px-16 lg:px-20 py-12 bg-white"
     >
       <a
-        href="http://localhost:5173/login"
+        href="#"
+        @click.prevent="router.push('/login')"
         class="absolute top-6 left-6 flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-carcara-laranja transition-colors group z-10"
-      >
+>
         <svg
           class="h-5 w-5 transform group-hover:-translate-x-1 transition-transform"
           fill="none"
@@ -324,7 +325,7 @@ const mockarDadosIFC = async () => {
   const matricula = prompt('Matrícula do Aluno:')
 
   if (nome && cpf && matricula) {
-    await fetch('http://localhost:3000/api/users/admin/mock-estudante', {
+    await fetch('/api/users/admin/mock-estudante', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nome, cpf, matricula }),
@@ -341,7 +342,7 @@ const validarComIFC = async () => {
 
   try {
     const res = await fetch(
-      `http://localhost:3000/api/users/validar-ifc/${form.value.cpf}/${form.value.matricula}`,
+      `/api/users/validar-ifc/${form.value.cpf}/${form.value.matricula}`,
     )
     const dados = await res.json()
 
@@ -388,7 +389,7 @@ const realizarCadastro = async () => {
   }
 
   try {
-    const resposta = await fetch('http://localhost:3000/api/users/cadastro', {
+    const resposta = await fetch('/api/users/cadastro', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -441,7 +442,7 @@ const handleCredentialResponse = async (response: GoogleAuthResponse) => {
   try {
     const tokenGoogle = response.credential
 
-    const respostaBackend = await fetch('http://localhost:3000/api/users/auth/google', {
+    const respostaBackend = await fetch('/api/users/auth/google', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

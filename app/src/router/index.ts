@@ -26,12 +26,14 @@ const router = createRouter({
     {
       path: '/painel-visitante',
       name: 'Visitante',
-      component: DashboardVisitante
+      component: DashboardVisitante,
+      meta: { requiresAuth: true }
     },
     {
       path: '/painel-interno',
       name: 'Interno',
-      component: DashboardInterno
+      component: DashboardInterno,
+      meta: { requiresAuth: true }
     },
   ],
 })

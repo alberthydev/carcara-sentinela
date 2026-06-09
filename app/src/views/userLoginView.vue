@@ -5,9 +5,9 @@
     >
       <div class="w-full max-w-md flex flex-col items-center">
         <a
-          href="http://localhost:5173"
+          href="/"
           class="absolute top-6 left-6 flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-carcara-laranja transition-colors group z-10"
-        >
+>
           <svg
             class="h-5 w-5 transform group-hover:-translate-x-1 transition-transform"
             fill="none"
@@ -257,7 +257,7 @@ const handleLogin = async () => {
   mensagem.value = ''
 
   try {
-    const resposta = await fetch('http://localhost:3000/api/users/login', {
+    const resposta = await fetch('/api/users/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -280,9 +280,9 @@ const handleLogin = async () => {
 
       setTimeout(() => {
         if (tipo === 'visitante') {
-          router.push('/dashboard/visitante');
+          router.push('/painel-visitante');
         } else {
-          router.push('/dashboard/interno');
+          router.push('/painel-interno');
         }
       }, 1500);
     } else {
@@ -309,7 +309,7 @@ const handleGoogleLoginResponse = async (response: GoogleAuthResponse) => {
     const tokenGoogle = response.credential
     tokenTemporario.value = tokenGoogle
 
-    const respostaBackend = await fetch('http://localhost:3000/api/users/auth/google', {
+    const respostaBackend = await fetch('/api/users/auth/google', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -338,9 +338,9 @@ const handleGoogleLoginResponse = async (response: GoogleAuthResponse) => {
       
       setTimeout(() => {
         if (tipo === 'visitante') {
-          router.push('/dashboard/visitante');
+          router.push('/painel-visitante');
         } else {
-          router.push('/dashboard/interno');
+          router.push('/painel-interno');
         }
       }, 1500)
     } else {
@@ -406,7 +406,7 @@ const concluirVinculoGoogle = async () => {
   mensagem.value = ''
 
   try {
-    const reply = await fetch('http://localhost:3000/api/users/auth/google', {
+    const reply = await fetch('/api/users/auth/google', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -431,9 +431,9 @@ const concluirVinculoGoogle = async () => {
 
       setTimeout(() => {
         if (tipo === 'visitante') {
-          router.push('/dashboard/visitante');
+          router.push('/painel-visitante');
         } else {
-          router.push('/dashboard/interno');
+          router.push('/painel-interno');
         }
       }, 1500)
     } else {
