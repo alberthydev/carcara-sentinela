@@ -7,7 +7,7 @@
         href="#"
         @click.prevent="router.push('/login')"
         class="absolute top-6 left-6 flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-carcara-laranja transition-colors group z-10"
->
+      >
         <svg
           class="h-5 w-5 transform group-hover:-translate-x-1 transition-transform"
           fill="none"
@@ -341,9 +341,7 @@ const validarComIFC = async () => {
   }
 
   try {
-    const res = await fetch(
-      `/api/users/validar-ifc/${form.value.cpf}/${form.value.matricula}`,
-    )
+    const res = await fetch(`/api/users/validar-ifc/${form.value.cpf}/${form.value.matricula}`)
     const dados = await res.json()
 
     if (res.ok) {
@@ -360,9 +358,12 @@ const validarComIFC = async () => {
       mensagem.value = dados.erro || 'Falha na validação.'
       tipoAlerta.value = 'erro'
     }
-  } catch (err) {
-    mensagem.value = `Erro ao consultar o Sistema IFC. info=${err.message}`
+  } catch (err: unknown) {
+    mensagem.value = 'Erro ao consultar o Sistema IFC.'
     tipoAlerta.value = 'erro'
+    if (err instanceof Error) {
+      mensagem.value = `Erro ao consultar o Sistema IFC. info=${err.message}`
+    }
   }
 }
 
@@ -472,11 +473,12 @@ const handleCredentialResponse = async (response: GoogleAuthResponse) => {
       mensagem.value = dados.erro || 'Erro ao processar login com Google.'
       tipoAlerta.value = 'erro'
     }
-  } catch (error) {
-    mensagem.value = `Falha na comunicação com o servidor backend. type=${error.message}`
+  } catch (error: unknown) {
+    mensagem.value = 'Falha na comunicação com o servidor backend.'
     tipoAlerta.value = 'erro'
-  } finally {
-    carregando.value = false
+    if (error instanceof Error) {
+      mensagem.value = `Falha na comunicação com o servidor backend. type=${error.message}`
+    }
   }
 }
 
