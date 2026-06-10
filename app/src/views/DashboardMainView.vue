@@ -62,7 +62,7 @@
           class="w-[41px] h-[39px] rounded-lg border-[1.3px] border-[#FD7917] flex items-center justify-center bg-[#FDEEE8] text-[#FD7917] font-bold cursor-pointer transition-transform active:scale-95"
           title="Menu do Usuário"
         >
-          {{ tipoUsuario[0].toUpperCase() }}
+          {{ inicialUsuario }}
         </button>
 
         <div
@@ -284,6 +284,14 @@ const textoPainel = computed(() => {
   if (tipoUsuario.value === 'visitante') return 'Painel de Visitas'
   if (tipoUsuario.value === 'servidor') return 'Dashboard Administrador'
   return 'Dashboard do Usuário'
+})
+
+const inicialUsuario = computed(() => {
+  const papel = tipoUsuario.value
+  if (papel === 'visitante') return 'V'
+  if (papel === 'servidor') return 'S'
+  if (papel === 'aluno') return 'A'
+  return 'U'
 })
 
 const handleLogout = () => {
