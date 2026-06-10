@@ -1,6 +1,5 @@
 <template>
   <div class="w-[71%] shrink-0 flex flex-col">
-    <!-- Seção de Veículos -->
     <section>
       <h2 class="text-[22px] font-semibold text-[#1E0D01] mb-[13px] h-[33px] flex items-center">
         Meus Veículos
@@ -47,6 +46,7 @@
           </div>
         </div>
         <button
+          @click="$emit('abrir-cadastro')"
           class="w-full aspect-[293/149] bg-gradient-to-br from-[#FD7917] to-[#F79347] rounded-2xl p-5 shadow-[0px_4px_20px_rgba(253,121,23,0.35)] flex flex-col items-center justify-center gap-2 hover:opacity-95 transition-opacity cursor-pointer active:scale-[0.98]"
         >
           <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
@@ -117,6 +117,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+
+defineEmits(['abrir-cadastro'])
 const meusVeiculos = ref([
   { marca: 'Chevrolet', cor: 'Branco', modelo: 'Onix', placa: 'ABC1D23' },
   { marca: 'Chevrolet', cor: 'Branco', modelo: 'Onix', placa: 'ABC1D23' },

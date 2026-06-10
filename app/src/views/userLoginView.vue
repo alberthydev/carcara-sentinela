@@ -7,7 +7,7 @@
         <a
           href="/"
           class="absolute top-6 left-6 flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-carcara-laranja transition-colors group z-10"
->
+        >
           <svg
             class="h-5 w-5 transform group-hover:-translate-x-1 transition-transform"
             fill="none"
@@ -269,22 +269,21 @@ const handleLogin = async () => {
     const dados = await resposta.json()
 
     if (resposta.ok) {
-      const tipo = dados.usuario.tipo; 
-      
-      // A SOLUÇÃO: Salvando o token e o usuário!
-      localStorage.setItem('user', JSON.stringify(dados.usuario)); 
-      localStorage.setItem('token', dados.token || 'token-provisorio'); // Ajuste vital aqui
+      const tipo = dados.usuario.tipo
 
-      mensagem.value = 'Login realizado com sucesso!';
-      tipoAlerta.value = 'sucesso';
+      localStorage.setItem('user', JSON.stringify(dados.usuario))
+      localStorage.setItem('token', dados.token || 'token-provisorio') // Ajuste vital aqui
+
+      mensagem.value = 'Login realizado com sucesso!'
+      tipoAlerta.value = 'sucesso'
 
       setTimeout(() => {
         if (tipo === 'visitante') {
-          router.push('/painel-visitante');
+          router.push('/dashboard')
         } else {
-          router.push('/painel-interno');
+          router.push('/dashboard')
         }
-      }, 1500);
+      }, 1500)
     } else {
       mensagem.value = dados.erro || 'CPF ou senha incorretos.'
       tipoAlerta.value = 'erro'
@@ -321,26 +320,26 @@ const handleGoogleLoginResponse = async (response: GoogleAuthResponse) => {
     const dados = await respostaBackend.json()
 
     if (respostaBackend.status === 202 && dados.vinculoPendente) {
-      mensagem.value = 'Olá! Identificamos sua conta Google, mas precisamos do seu CPF para concluir o acesso.'
+      mensagem.value =
+        'Olá! Identificamos sua conta Google, mas precisamos do seu CPF para concluir o acesso.'
       tipoAlerta.value = 'sucesso'
       promptCpfVinculo.value = true
       return
     }
 
     if (respostaBackend.ok) {
-      // Aplicando a mesma lógica de roteamento e salvamento para o Google
-      const tipo = dados.usuario?.tipo || 'visitante';
-      localStorage.setItem('user', JSON.stringify(dados.usuario));
-      localStorage.setItem('token', dados.token || tokenGoogle);
+      const tipo = dados.usuario?.tipo || 'visitante'
+      localStorage.setItem('user', JSON.stringify(dados.usuario))
+      localStorage.setItem('token', dados.token || tokenGoogle)
 
       mensagem.value = `Bem-vindo de volta, ${dados.usuario?.nome || 'Usuário'}!`
       tipoAlerta.value = 'sucesso'
-      
+
       setTimeout(() => {
         if (tipo === 'visitante') {
-          router.push('/painel-visitante');
+          router.push('/dashboard')
         } else {
-          router.push('/painel-interno');
+          router.push('/dashboard')
         }
       }, 1500)
     } else {
@@ -348,7 +347,7 @@ const handleGoogleLoginResponse = async (response: GoogleAuthResponse) => {
       tipoAlerta.value = 'erro'
     }
   } catch (error: unknown) {
-    mensagem.value = 'Falha na comunicação com o servidor backend.'
+    mensagem.value = `Falha na comunicação com o servidor backend. ${error instanceof Error ? error.message : String(error)}`
     tipoAlerta.value = 'erro'
   } finally {
     carregando.value = false
@@ -418,10 +417,9 @@ const concluirVinculoGoogle = async () => {
     const dados = await reply.json()
 
     if (reply.ok) {
-      // Aplicando a mesma lógica de roteamento e salvamento para o Vínculo
-      const tipo = dados.usuario?.tipo || 'visitante';
-      localStorage.setItem('user', JSON.stringify(dados.usuario));
-      localStorage.setItem('token', dados.token || tokenTemporario.value);
+      const tipo = dados.usuario?.tipo || 'visitante'
+      localStorage.setItem('user', JSON.stringify(dados.usuario))
+      localStorage.setItem('token', dados.token || tokenTemporario.value)
 
       mensagem.value = `Vínculo realizado com sucesso! Bem-vindo, ${dados.usuario?.nome || 'Usuário'}!`
       tipoAlerta.value = 'sucesso'
@@ -431,9 +429,9 @@ const concluirVinculoGoogle = async () => {
 
       setTimeout(() => {
         if (tipo === 'visitante') {
-          router.push('/painel-visitante');
+          router.push('/dashboard')
         } else {
-          router.push('/painel-interno');
+          router.push('/dashboard')
         }
       }, 1500)
     } else {

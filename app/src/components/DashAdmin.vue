@@ -5,7 +5,6 @@
         Estacionamento
       </h2>
       <div class="w-full grid grid-cols-3 gap-5">
-        <!-- Vagas Detectadas/Carros Ativos -->
         <div
           class="w-full aspect-[293/149] bg-white border border-[#F79347] rounded-2xl p-5 shadow-[0px_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between"
         >
@@ -31,7 +30,6 @@
       </div>
     </section>
 
-    <!-- Histórico de hoje Geral -->
     <section
       class="w-full mt-[28px] flex-1 border border-[#F79347] rounded-2xl p-6 bg-[#FAFBFC] flex flex-col"
     >

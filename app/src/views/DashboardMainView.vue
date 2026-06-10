@@ -1,8 +1,7 @@
 <template>
   <div class="min-h-screen bg-[#FAFBFC] font-sans text-[#1E0D01]">
-    <!-- HEADER COMPARTILHADO -->
     <header
-      class="w-full h-[113px] bg-[#FAFBFC] border-b border-[#FDEEE8] flex items-center justify-between px-[52px] relative z-10"
+      class="w-full h-[113px] bg-[#FAFBFC] border-b border-[#FDEEE8] flex items-center justify-between px-[52px] relative z-20"
     >
       <div class="flex items-center gap-4">
         <img src="@/assets/img/carcara.png" alt="Logo" class="w-[38px] h-[50px] object-contain" />
@@ -17,10 +16,9 @@
         <span class="text-[#1E0D01] text-base font-medium">{{ textoPainel }}</span>
       </div>
 
-      <div class="flex items-center gap-3">
-        <!-- Seus 3 botões de ação do Header -->
+      <div class="flex items-center gap-3 relative">
         <button
-          class="w-[41px] h-[39px] rounded-lg border-[1.3px] border-[#F79347] flex items-center justify-center bg-[#FAFBFC] hover:bg-[#FDEEE8] text-[#F79347] cursor-pointer"
+          class="w-[41px] h-[39px] rounded-lg border-[1.3px] border-[#F79347] flex items-center justify-center bg-[#FAFBFC] hover:bg-[#FDEEE8] transition-colors cursor-pointer text-[#F79347]"
         >
           <svg
             width="20"
@@ -29,13 +27,18 @@
             fill="none"
             stroke="currentColor"
             stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           >
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
           </svg>
         </button>
+
         <button
-          class="w-[41px] h-[39px] rounded-lg border-[1.3px] border-[#F79347] flex items-center justify-center bg-[#FAFBFC] hover:bg-[#FDEEE8] text-[#F79347] cursor-pointer"
+          @click="isModalPerfilAberto = true"
+          class="w-[41px] h-[39px] rounded-lg border-[1.3px] border-[#F79347] flex items-center justify-center bg-[#FAFBFC] hover:bg-[#FDEEE8] transition-colors cursor-pointer text-[#F79347]"
+          title="Configurações do Perfil"
         >
           <svg
             width="20"
@@ -44,6 +47,8 @@
             fill="none"
             stroke="currentColor"
             stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           >
             <circle cx="12" cy="12" r="3"></circle>
             <path
@@ -51,48 +56,125 @@
             ></path>
           </svg>
         </button>
+
         <button
-          @click="alternarTipoTeste"
-          class="w-[41px] h-[39px] rounded-lg border-[1.3px] border-[#FD7917] flex items-center justify-center bg-[#FDEEE8] text-[#FD7917] font-bold cursor-pointer title='Clique para alternar papel e testar'"
+          @click="isDropdownAberto = !isDropdownAberto"
+          class="w-[41px] h-[39px] rounded-lg border-[1.3px] border-[#FD7917] flex items-center justify-center bg-[#FDEEE8] text-[#FD7917] font-bold cursor-pointer transition-transform active:scale-95"
+          title="Menu do Usuário"
         >
           {{ tipoUsuario[0].toUpperCase() }}
         </button>
+
+        <div
+          v-if="isDropdownAberto"
+          class="absolute right-0 top-[48px] w-[240px] bg-[#D17836] text-white rounded-2xl p-4 shadow-xl flex flex-col text-left z-30 animate-scaleUp"
+        >
+          <div
+            class="text-xs opacity-75 font-medium px-2 mb-2 pb-2 border-b border-white/20 capitalize"
+          >
+            Sessão: {{ tipoUsuario }}
+          </div>
+
+          <template v-if="tipoUsuario === 'servidor'">
+            <button
+              @click="acaoAdmin('usuarios')"
+              class="w-full text-left py-2 px-2 hover:bg-white/10 rounded-lg text-sm transition-colors cursor-pointer"
+            >
+              Usuarios
+            </button>
+            <button
+              @click="acaoAdmin('escala')"
+              class="w-full text-left py-2 px-2 hover:bg-white/10 rounded-lg text-sm transition-colors cursor-pointer"
+            >
+              Escala de Funcionários
+            </button>
+            <button
+              @click="acaoAdmin('relatorios')"
+              class="w-full text-left py-2 px-2 hover:bg-white/10 rounded-lg text-sm transition-colors cursor-pointer border-b border-white/20 pb-3 mb-2"
+            >
+              Relatórios
+            </button>
+          </template>
+
+          <button
+            @click="alternarTipoTeste"
+            class="w-full text-left py-2 px-2 hover:bg-white/10 rounded-lg text-xs transition-colors cursor-pointer text-orange-200 font-bold mb-2"
+          >
+            Alternar Papel (Dev)
+          </button>
+
+          <button
+            @click="handleLogout"
+            class="w-full text-left py-2 px-2 hover:bg-red-600 rounded-lg text-sm transition-colors cursor-pointer font-semibold flex items-center justify-between"
+          >
+            <span>Sair</span>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
+        </div>
       </div>
     </header>
 
-    <!-- GRID PRINCIPAL -->
     <main
       class="w-[92%] max-w-[1600px] mx-auto py-10 flex justify-between items-stretch animate-fadeIn"
     >
-      <!-- 🔄 INJEÇÃO DINÂMICA DO MIOLO DO DASHBOARD -->
-      <component :is="componenteFilho" />
+      <component :is="componenteFilho" @abrir-cadastro="isModalVeiculoAberto = true" />
 
-      <!-- ASIDE DA DIREITA (CHAVEIA OS BLOCOS COMPARTILHADOS / ESPECÍFICOS) -->
       <aside class="w-[26%] shrink-0 flex flex-col gap-[24px] mt-[46px]">
-        <!-- Bloco de Segurança - Exclusivo do Admin -->
         <div
           v-if="tipoUsuario === 'servidor'"
-          class="w-full bg-white border border-[#FDEEE8] shadow-[0px_2px_12px_rgba(0,0,0,0.04)] rounded-2xl p-6 flex flex-col text-left"
+          class="w-full bg-white border border-[#FDEEE8] shadow-[0px_2px_12px_rgba(0,0,0,0.04)] rounded-2xl p-6 flex flex-col justify-center text-left"
         >
           <h3 class="text-[16px] font-semibold text-[#1E0D01] mb-4">Segurança</h3>
+
           <div class="flex items-center gap-4">
             <div
-              class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600"
+              class="w-[48px] h-[48px] rounded-full bg-[#FDEEE8] border border-[#F79347] flex items-center justify-center text-[#FD7917]"
             >
-              FT
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
             </div>
-            <div>
-              <p class="text-[14px] font-bold text-[#1E0D01]">Fernando Torres</p>
-              <p class="text-[11px] text-[#AAB1BD]">Segurança Ativo</p>
+            <div class="flex flex-col">
+              <span class="text-[15px] font-semibold text-[#1E0D01]">Fernando Torres</span>
+              <span class="text-[12px] text-[#AAB1BD]">Segurança Ativo</span>
             </div>
           </div>
-          <div class="mt-4 text-[12px] flex flex-col gap-2 border-t border-gray-50 pt-3">
-            <p><strong>Turno:</strong> Manhã e Tarde</p>
-            <p><strong>Escala:</strong> Segunda, Quarta, Sexta</p>
+
+          <div
+            class="mt-4 pt-4 border-t border-[#FDEEE8] flex flex-col gap-2 text-[13px] text-[#1E0D01]"
+          >
+            <div class="flex justify-between">
+              <strong>Turno:</strong><span class="text-gray-500">Manhã e Tarde</span>
+            </div>
+            <div class="flex justify-between">
+              <strong>Escala:</strong><span class="text-gray-500">Segunda, Quarta, Sexta</span>
+            </div>
+            <div class="flex justify-between">
+              <strong>Acesso ao Sistema:</strong
+              ><span class="text-[#FD7917] font-semibold">06:03:45</span>
+            </div>
           </div>
         </div>
 
-        <!-- Bloco de Avisos ou Regras (Chaveia conforme o tipo) -->
         <div
           v-else
           class="w-full aspect-[360/252] bg-white border border-[#FDEEE8] shadow-[0px_2px_12px_rgba(0,0,0,0.04)] rounded-2xl p-6 flex flex-col justify-center text-left"
@@ -111,7 +193,6 @@
           </p>
         </div>
 
-        <!-- Quantitativo de Vagas (COMPARTILHADO POR TODOS!) -->
         <div
           class="w-full aspect-[360/208] bg-gradient-to-br from-[#FD7917] to-[#F79347] shadow-[0px_8px_32px_rgba(253,121,23,0.3)] rounded-2xl p-6 flex flex-col justify-center gap-4 text-left"
         >
@@ -157,21 +238,42 @@
         </div>
       </aside>
     </main>
+
+    <ModalCadastrarVeiculo
+      :is-open="isModalVeiculoAberto"
+      @close="isModalVeiculoAberto = false"
+      @save="receberNovoVeiculo"
+    />
+    <ModalPerfilUsuario :is-open="isModalPerfilAberto" @close="isModalPerfilAberto = false" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+
 import DashVisitante from '../components/DashVisitante.vue'
 import DashAlunoServidor from '../components/DashAlunoServidor.vue'
 import DashAdmin from '../components/DashAdmin.vue'
+import ModalCadastrarVeiculo from '../components/ModalCadastrarVeiculo.vue'
+import ModalPerfilUsuario from '../components/ModalPerfilUsuario.vue'
 
 const tipoUsuario = ref<'visitante' | 'aluno' | 'servidor'>('aluno')
+const isModalVeiculoAberto = ref(false)
+const isModalPerfilAberto = ref(false)
+const isDropdownAberto = ref(false)
 
 const mapasDeComponente = {
   visitante: DashVisitante,
   aluno: DashAlunoServidor,
   servidor: DashAdmin,
+}
+
+interface VeiculoPayload {
+  placa: string
+  marca: string
+  modelo: string
+  ano: string
+  cor: string
 }
 
 const componenteFilho = computed(() => {
@@ -184,10 +286,25 @@ const textoPainel = computed(() => {
   return 'Dashboard do Usuário'
 })
 
+const handleLogout = () => {
+  isDropdownAberto.value = false
+  window.location.href = '/'
+}
+
+const acaoAdmin = (contexto: string) => {
+  isDropdownAberto.value = false
+  alert(`Menu Administrativo acionado: [${contexto}]. Em breve traremos a lógica dele!`)
+}
+
+const receberNovoVeiculo = (dadosVeiculo: VeiculoPayload) => {
+  console.log('Veículo recebido na View principal:', dadosVeiculo)
+}
+
 const alternarTipoTeste = () => {
   if (tipoUsuario.value === 'aluno') tipoUsuario.value = 'visitante'
   else if (tipoUsuario.value === 'visitante') tipoUsuario.value = 'servidor'
   else tipoUsuario.value = 'aluno'
+  isDropdownAberto.value = false
 }
 </script>
 
@@ -195,6 +312,11 @@ const alternarTipoTeste = () => {
 .animate-fadeIn {
   animation: fadeIn 0.3s ease-out forwards;
 }
+.animate-scaleUp {
+  animation: scaleUp 0.15s ease-out forwards;
+  transform-origin: top right;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -203,6 +325,16 @@ const alternarTipoTeste = () => {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 </style>

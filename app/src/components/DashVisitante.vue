@@ -45,6 +45,7 @@
         </div>
         <!-- Botão Agendar -->
         <button
+          @click="$emit('abrir-cadastro')"
           class="w-full aspect-[293/149] bg-gradient-to-br from-[#FD7917] to-[#F79347] rounded-2xl p-5 shadow-[0px_4px_20px_rgba(253,121,23,0.35)] flex flex-col items-center justify-center gap-2 hover:opacity-95 transition-opacity cursor-pointer"
         >
           <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
@@ -65,7 +66,6 @@
       </div>
     </section>
 
-    <!-- Histórico de Visitas -->
     <section
       class="w-full mt-[28px] flex-1 border border-[#F79347] rounded-2xl p-6 bg-[#FAFBFC] flex flex-col"
     >
@@ -91,3 +91,7 @@
     </section>
   </div>
 </template>
+
+<script setup lang="ts">
+defineEmits(['abrir-cadastro'])
+</script>
