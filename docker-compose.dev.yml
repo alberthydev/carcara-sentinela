@@ -1,0 +1,40 @@
+services:
+  banco_dados:
+    image: mongo:5.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_dev_data:/data/db
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./api:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      - PORT=3000
+      - MONGO_URI=mongodb://banco_dados:27017/carcara_db_dev
+    depends_on:
+      - banco_dados
+    command: npm run dev
+
+  app:
+    image: node:20-alpine
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./app:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - api
+    command: sh -c "npm install && ./node_modules/.bin/vite --host 0.0.0.0"
+
+volumes:
+  mongo_dev_data:
