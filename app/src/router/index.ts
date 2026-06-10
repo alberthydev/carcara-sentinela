@@ -3,7 +3,7 @@ import HomeView from '@/views/HomeView.vue'
 import CadastroVisitanteView from '@/views/userRegisterView.vue'
 import UserLoginView from '@/views/userLoginView.vue'
 import DashboardVisitante from '../views/DashboardVisitante.vue'
-import DashboardInterno from '../views/DashboardInterno.vue'
+import DashboardMain from '../views/DashboardMainView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -27,18 +27,17 @@ const router = createRouter({
       path: '/painel-visitante',
       name: 'Visitante',
       component: DashboardVisitante,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
-      path: '/painel-interno',
+      path: '/dashboard',
       name: 'Interno',
-      component: DashboardInterno,
-      meta: { requiresAuth: true }
+      component: DashboardMain,
+      meta: { requiresAuth: true },
     },
   ],
 })
 
-// Porteiro de rotas: verifica se o usuário tem token antes de acessar o dashboard
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   if (to.meta.requiresAuth && !token) {
