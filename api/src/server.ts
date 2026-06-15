@@ -1,7 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors'; 
-import userRoutes from './routes/userRoutes';
+import routes from './routes/routes';
 
 const app = express();
 
@@ -19,7 +19,8 @@ app.get('/', (req, res) => {
   res.json({ mensagem: 'API Carcará Sentinela Operacional' });
 });
 
-app.use('/api/users', userRoutes); 
+app.use('/api/users', routes); 
+app.use('/api/lpr', routes);
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);

@@ -6,6 +6,7 @@ import {
 } from "../controllers/userController";
 import { Estudante } from "../models/Estudante";
 import rateLimit from "express-rate-limit";
+import { lprStream, simularLeituraLPR } from "../controllers/lprController";
 
 const router = Router();
 
@@ -57,5 +58,8 @@ router.post("/admin/mock-estudante", async (req: Request, res: Response) => {
 
 router.post("/login", authLimiter, loginUser);
 router.post("/auth/google", authLimiter, googleAuth);
+
+router.get("/stream", lprStream);
+router.post("/evento", simularLeituraLPR);
 
 export default router;
