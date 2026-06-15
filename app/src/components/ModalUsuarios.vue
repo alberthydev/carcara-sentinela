@@ -34,7 +34,7 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
               </div>
               
-              <div class="col-span-1 flex justify-center cursor-pointer transform hover:scale-110 transition-all" @click="user.ativo = !user.ativo" :title="user.ativo ? 'Inativar Usuário' : 'Ativar Usuário'">
+              <div class="col-span-1 flex justify-center cursor-pointer transform hover:scale-110 transition-all" @click="alternarStatus(user)" :title="user.ativo ? 'Inativar Usuário' : 'Ativar Usuário'">
                 <svg v-if="user.ativo" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#80CC28" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EA4335" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </div>
@@ -105,9 +105,10 @@ const props = defineProps<{ isOpen: boolean }>()
 const emit = defineEmits(['close'])
 
 const modo = ref<'lista' | 'cadastro' | 'edicao'>('lista')
+const carregando = ref(false)
 
 interface Usuario {
-  id: number;
+  _id: string;
   cpf: string;
   matricula?: string;
   nome: string;
@@ -117,7 +118,7 @@ interface Usuario {
 }
 
 const form = ref({
-  id: 0,
+  _id: '',
   cpf: '',
   matricula: '',
   nome: '',
@@ -126,25 +127,30 @@ const form = ref({
   senha: ''
 })
 
-const usuarios = ref<Usuario[]>([
-  { id: 1, cpf: '111.111.111-11', matricula: '', nome: 'Sérgio', sobrenome: 'Carvalho', tipo: 'visitante', ativo: false },
-  { id: 2, cpf: '222.222.222-22', matricula: '2023001', nome: 'Carlos', sobrenome: 'Silva', tipo: 'aluno', ativo: true },
-  { id: 3, cpf: '333.333.333-33', matricula: '', nome: 'Vinícius', sobrenome: 'Santos', tipo: 'visitante', ativo: true },
-  { id: 4, cpf: '444.444.444-44', matricula: '', nome: 'Jorge', sobrenome: 'Amado', tipo: 'visitante', ativo: true },
-  { id: 5, cpf: '555.555.555-55', matricula: '2020002', nome: 'José', sobrenome: 'Felipe', tipo: 'servidor', ativo: true },
-  { id: 6, cpf: '666.666.666-66', matricula: '', nome: 'Pedro', sobrenome: 'Tavares', tipo: 'visitante', ativo: true }
-])
+const usuarios = ref<Usuario[]>([])
+
+const buscarUsuarios = async () => {
+  try {
+    const res = await fetch('/api/users/admin/usuarios')
+    if (res.ok) {
+      usuarios.value = await res.json()
+    }
+  } catch (error) {
+    console.error('Erro ao buscar usuários:', error)
+  }
+}
 
 watch(() => props.isOpen, (novo) => {
   if (novo) {
     modo.value = 'lista'
     limparFormulario()
+    buscarUsuarios()
   }
 })
 
 const abrirEdicao = (user: Usuario) => {
   form.value = {
-    id: user.id,
+    _id: user._id,
     cpf: user.cpf,
     matricula: user.matricula || '',
     nome: user.nome,
@@ -155,33 +161,61 @@ const abrirEdicao = (user: Usuario) => {
   modo.value = 'edicao'
 }
 
-const salvarUsuario = () => {
-  if (!usuarios.value) usuarios.value = []
-
-  if (modo.value === 'cadastro') {
-    usuarios.value.unshift({
-      id: Date.now(),
-      cpf: form.value.cpf,
-      matricula: form.value.matricula,
-      nome: form.value.nome,
-      sobrenome: form.value.sobrenome,
-      tipo: form.value.tipo,
-      ativo: true
-    })
-  } else if (modo.value === 'edicao') {
-    const usuarioEditado = usuarios.value.find(u => u.id === form.value.id)
-    
-    if (usuarioEditado) {
-      usuarioEditado.nome = form.value.nome
-      usuarioEditado.sobrenome = form.value.sobrenome
-    }
-  }
+const alternarStatus = async (user: Usuario) => {
+  const novoStatus = !user.ativo;
+  user.ativo = novoStatus; 
   
-  voltarParaLista()
+  try {
+    await fetch(`/api/users/admin/usuarios/${user._id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ativo: novoStatus })
+    })
+  } catch (error) {
+    console.error('Erro ao alterar status:', error)
+    user.ativo = !novoStatus; 
+  }
+}
+
+const salvarUsuario = async () => {
+  carregando.value = true;
+  try {
+    if (modo.value === 'cadastro') {
+      await fetch('/api/users/cadastro', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cpf: form.value.cpf,
+          matricula: form.value.matricula,
+          nome: form.value.nome,
+          sobrenome: form.value.sobrenome,
+          tipo: form.value.tipo,
+          senha: form.value.senha,
+          fotoUrl: `https://ui-avatars.com/api/?name=${form.value.nome}`
+        })
+      })
+    } else if (modo.value === 'edicao') {
+      await fetch(`/api/users/admin/usuarios/${form.value._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: form.value.nome,
+          sobrenome: form.value.sobrenome
+        })
+      })
+    }
+    
+    await buscarUsuarios()
+    voltarParaLista()
+  } catch (error) {
+    console.error('Erro ao salvar usuário:', error)
+  } finally {
+    carregando.value = false;
+  }
 }
 
 const limparFormulario = () => {
-  form.value = { id: 0, cpf: '', matricula: '', nome: '', sobrenome: '', tipo: '', senha: '' }
+  form.value = { _id: '', cpf: '', matricula: '', nome: '', sobrenome: '', tipo: '', senha: '' }
 }
 
 const voltarParaLista = () => {

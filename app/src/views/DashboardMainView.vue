@@ -17,7 +17,7 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
         </button>
 
-        <button v-if="tipoUsuario !== 'seguranca'" @click="abrirConfiguracaoHeader" class="w-[41px] h-[39px] rounded-lg border-[1.3px] border-[#F79347] flex items-center justify-center bg-[#FAFBFC] hover:bg-[#FDEEE8] transition-colors cursor-pointer text-[#F79347]" title="Configurações do Perfil">
+        <button v-if="tipoUsuario !== 'seguranca'" @click="abrirConfiguracaoHeader" class="w-[41px] h-[39px] rounded-lg border-[1.3px] border-[#F79347] flex items-center justify-center bg-[#FAFBFC] hover:bg-[#FDEEE8] transition-colors cursor-pointer text-[#F79347]" title="Configurações">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
         </button>
 
@@ -30,13 +30,15 @@
             Sessão: {{ tipoUsuario }}
           </div>
 
-          <template v-if="tipoUsuario === 'servidor'">
+          <template v-if="tipoUsuario === 'admin'">
             <button @click="acaoAdmin('usuarios')" class="w-full text-left py-2 px-2 hover:bg-white/10 rounded-lg text-sm transition-colors cursor-pointer">Usuarios</button>
             <button @click="acaoAdmin('escala')" class="w-full text-left py-2 px-2 hover:bg-white/10 rounded-lg text-sm transition-colors cursor-pointer">Escala de Funcionários</button>
             <button @click="acaoAdmin('relatorios')" class="w-full text-left py-2 px-2 hover:bg-white/10 rounded-lg text-sm transition-colors cursor-pointer border-b border-white/20 pb-3 mb-2">Relatórios</button>
           </template>
 
-          <button @click="alternarTipoTeste" class="w-full text-left py-2 px-2 hover:bg-white/10 rounded-lg text-xs transition-colors cursor-pointer text-orange-200 font-bold mb-2">Alternar Papel (Dev)</button>
+          <button v-if="isDevMode" @click="alternarTipoTeste" class="w-full text-left py-2 px-2 hover:bg-white/10 rounded-lg text-xs transition-colors cursor-pointer text-orange-200 font-bold mb-2">
+            Alternar Papel (Dev)
+          </button>
 
           <button @click="handleLogout" class="w-full text-left py-2 px-2 hover:bg-red-600 rounded-lg text-sm transition-colors cursor-pointer font-semibold flex items-center justify-between">
             <span>Sair</span>
@@ -50,6 +52,9 @@
       
       <component 
         :is="componenteFilho" 
+        :usuario-id="usuarioLogado?.id" 
+        :total-vagas="totalVagasGlobal" 
+        :vagas-ocupadas="vagasOcupadas"
         @abrir-cadastro="abrirCadastroNormal"
         @abrir-cadastro-rapido="abrirCadastroRapido" 
         @acesso-registrado="registrarAcesso"
@@ -57,44 +62,79 @@
 
       <aside class="w-[26%] shrink-0 flex flex-col gap-6 mt-[46px]">
         
-        <template v-if="tipoUsuario === 'seguranca'">
+        <div v-if="tipoUsuario === 'admin' || tipoUsuario === 'seguranca'" class="bg-white rounded-[24px] p-6 shadow-sm border border-[#FDEEE8] flex flex-col text-left">
+          <h3 class="font-bold text-[#1E0D01] mb-5 text-[16px]">Segurança em Turno</h3>
           
-          <div class="w-full bg-[#FD7917] shadow-[0px_8px_32px_rgba(253,121,23,0.3)] rounded-[24px] p-6 flex flex-col gap-4 text-left">
-            <h3 class="text-[16px] font-bold text-white">Quantitativo de Vagas</h3>
-            <div class="flex items-center gap-6 mt-2">
-              
-              <div class="relative w-[110px] h-[110px] shrink-0 flex items-center justify-center">
-                <svg width="110" height="110" viewBox="0 0 120 120" class="transform -rotate-90">
-                  <circle cx="60" cy="60" r="45" fill="none" stroke="#FDEEE8" stroke-width="20" />
-                  <circle 
-                    cx="60" cy="60" r="45" fill="none" stroke="#613613" stroke-width="20" 
-                    :stroke-dasharray="282.7" 
-                    :stroke-dashoffset="dashOffsetVagas" 
-                    class="transition-all duration-500 ease-out"
-                  />
-                </svg>
-                <span class="absolute text-white font-bold text-lg">{{ percentualOcupacao }}%</span>
-              </div>
-              
-              <div class="flex flex-col gap-4">
-                <div class="flex items-start gap-3">
-                  <div class="w-3.5 h-3.5 rounded bg-[#613613] shrink-0 mt-1"></div>
-                  <div class="flex flex-col">
-                    <span class="text-[11px] font-semibold text-white/80 leading-tight">Total</span>
-                    <span class="text-[20px] font-bold text-white leading-tight">{{ totalVagasGlobal }}</span>
-                  </div>
+          <div v-if="segurancaAtivo" class="flex items-center gap-4 mb-6">
+            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-bold text-lg">
+              {{ segurancaAtivo.nome.charAt(0) }}
+            </div>
+            <div class="flex flex-col">
+              <h4 class="font-bold text-[#1E0D01] leading-tight text-[15px]">{{ segurancaAtivo.nome }}</h4>
+              <span class="text-[12px] text-green-600 font-medium mt-0.5">Segurança Ativo</span>
+            </div>
+          </div>
+          <div v-else class="text-sm text-gray-400 italic mb-6">Nenhum segurança escalado no momento.</div>
+
+          <div v-if="segurancaAtivo" class="flex flex-col gap-3 text-[13px]">
+            <div class="flex justify-between items-center border-b border-gray-50 pb-2">
+              <span class="text-[#AAB1BD] font-medium">Turno</span>
+              <span class="font-bold text-[#1E0D01]">{{ segurancaAtivo.turno }}</span>
+            </div>
+            <div class="flex justify-between items-center border-b border-gray-50 pb-2">
+              <span class="text-[#AAB1BD] font-medium">Horário</span>
+              <span class="font-bold text-[#1E0D01]">{{ segurancaAtivo.horaInicio }} as {{ segurancaAtivo.horaFim }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="tipoUsuario === 'aluno' || tipoUsuario === 'servidor' || tipoUsuario === 'visitante'" class="w-full aspect-[360/252] bg-white border border-[#FDEEE8] shadow-sm rounded-[24px] p-6 flex flex-col justify-center text-left">
+          <h3 class="text-[16px] font-semibold text-[#1E0D01] mb-4">
+            {{ tipoUsuario === 'visitante' ? 'Acesso Automático' : 'Avisos do Campus' }}
+          </h3>
+          <p class="text-[13px] font-medium text-[#1E0D01] leading-relaxed">
+            <template v-if="tipoUsuario === 'visitante'">
+              No dia da sua visita, dirija-se à cancela. Nossa câmera fará a leitura da placa cadastrada e a liberação será automática.
+            </template>
+            <template v-else>Ex: Estacionamento do bloco B fechado para manutenção amanhã.</template>
+          </p>
+        </div>
+
+        <div class="w-full bg-[#FD7917] shadow-[0px_8px_32px_rgba(253,121,23,0.3)] rounded-[24px] p-6 flex flex-col gap-4 text-left">
+          <h3 class="text-[16px] font-bold text-white">Quantitativo de Vagas</h3>
+          <div class="flex items-center gap-6 mt-2">
+            <div class="relative w-[110px] h-[110px] shrink-0 flex items-center justify-center">
+              <svg width="110" height="110" viewBox="0 0 120 120" class="transform -rotate-90">
+                <circle cx="60" cy="60" r="45" fill="none" stroke="#FDEEE8" stroke-width="20" />
+                <circle 
+                  cx="60" cy="60" r="45" fill="none" stroke="#613613" stroke-width="20" 
+                  :stroke-dasharray="282.7" 
+                  :stroke-dashoffset="dashOffsetVagas" 
+                  class="transition-all duration-500 ease-out"
+                />
+              </svg>
+              <span class="absolute text-white font-bold text-lg">{{ percentualOcupacao }}%</span>
+            </div>
+            <div class="flex flex-col gap-4">
+              <div class="flex items-start gap-3">
+                <div class="w-3.5 h-3.5 rounded bg-[#613613] shrink-0 mt-1"></div>
+                <div class="flex flex-col">
+                  <span class="text-[11px] font-semibold text-white/80 leading-tight">Total</span>
+                  <span class="text-[20px] font-bold text-white leading-tight">{{ totalVagasGlobal }}</span>
                 </div>
-                <div class="flex items-start gap-3">
-                  <div class="w-3.5 h-3.5 rounded bg-[#FDEEE8] shrink-0 mt-1"></div>
-                  <div class="flex flex-col">
-                    <span class="text-[11px] font-semibold text-white/80 leading-tight">Ocupadas</span>
-                    <span class="text-[20px] font-bold text-white leading-tight">{{ vagasOcupadas }}</span>
-                  </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="w-3.5 h-3.5 rounded bg-[#FDEEE8] shrink-0 mt-1"></div>
+                <div class="flex flex-col">
+                  <span class="text-[11px] font-semibold text-white/80 leading-tight">Ocupadas</span>
+                  <span class="text-[20px] font-bold text-white leading-tight">{{ vagasOcupadas }}</span>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
+        <template v-if="tipoUsuario === 'seguranca'">
           <div class="w-full bg-white border border-[#FDEEE8] rounded-[24px] p-6 shadow-[0px_2px_12px_rgba(0,0,0,0.02)] flex flex-col text-left">
             <h3 class="text-[16px] font-bold text-[#1E0D01] mb-4">Acessos Hoje</h3>
             <div class="grid grid-cols-2 gap-4">
@@ -108,7 +148,7 @@
               </div>
             </div>
           </div>
-
+          
           <div class="w-full bg-white border border-[#FDEEE8] rounded-[24px] p-6 shadow-[0px_2px_12px_rgba(0,0,0,0.02)] flex flex-col text-left">
             <h3 class="text-[16px] font-bold text-[#1E0D01] mb-5">Stream da Câmera</h3>
             <div class="flex flex-col gap-3 text-[13px]">
@@ -131,38 +171,15 @@
             </div>
           </div>
         </template>
-
-        <template v-else>
-          <div v-if="tipoUsuario === 'servidor'" class="w-full bg-white border border-[#FDEEE8] shadow-[0px_2px_12px_rgba(0,0,0,0.04)] rounded-2xl p-6 flex flex-col justify-center text-left">
-            <h3 class="text-[16px] font-semibold text-[#1E0D01] mb-4">Administração</h3>
-            <div class="flex items-center gap-4">
-              <div class="w-[48px] h-[48px] rounded-full bg-[#FDEEE8] border border-[#F79347] flex items-center justify-center text-[#FD7917]">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-              </div>
-              <div class="flex flex-col">
-                <span class="text-[15px] font-semibold text-[#1E0D01]">Fernando Torres</span>
-                <span class="text-[12px] text-[#AAB1BD]">Admin Sistema</span>
-              </div>
-            </div>
-          </div>
-
-          <div v-else class="w-full aspect-[360/252] bg-white border border-[#FDEEE8] shadow-[0px_2px_12px_rgba(0,0,0,0.04)] rounded-2xl p-6 flex flex-col justify-center text-left">
-            <h3 class="text-[16px] font-semibold text-[#1E0D01] mb-4">
-              {{ tipoUsuario === 'visitante' ? 'Acesso Automático' : 'Avisos do Campus' }}
-            </h3>
-            <p class="text-[13px] font-medium text-[#1E0D01] leading-relaxed">
-              <template v-if="tipoUsuario === 'visitante'">
-                No dia da sua visita, dirija-se à cancela. Nossa câmera fará a leitura da placa cadastrada e a liberação será automática.
-              </template>
-              <template v-else>Ex: Estacionamento do bloco B fechado para manutenção amanhã.</template>
-            </p>
-          </div>
-        </template>
-
       </aside>
     </main>
 
-    <ModalCadastrarVeiculo :is-open="isModalVeiculoAberto" :dados-l-p-r="dadosCamera" @close="fecharModalVeiculo" @save="receberNovoVeiculo" />
+    <ModalCadastrarVeiculo 
+      :is-open="isModalVeiculoAberto" 
+      :tipo-usuario-visualizando="tipoUsuario" 
+      @close="fecharModalVeiculo" 
+      @save="receberNovoVeiculo" 
+    />
     <ModalPerfilUsuario :is-open="isModalPerfilAberto" @close="isModalPerfilAberto = false" />
     <ModalConfigCampus :is-open="isModalConfigCampusAberto" :vagas-atuais="totalVagasGlobal" @close="isModalConfigCampusAberto = false" @save="salvarConfigCampus" />
     <ModalEscala :is-open="isModalEscalaAberto" @close="isModalEscalaAberto = false" />
@@ -172,7 +189,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
 import DashVisitante from '../components/DashVisitante.vue'
 import DashAlunoServidor from '../components/DashAlunoServidor.vue'
@@ -181,13 +198,15 @@ import DashSeguranca from '../components/DashSeguranca.vue'
 
 import ModalCadastrarVeiculo from '../components/ModalCadastrarVeiculo.vue'
 import ModalPerfilUsuario from '../components/ModalPerfilUsuario.vue'
-
 import ModalConfigCampus from '../components/ModalConfigCampus.vue'
 import ModalEscala from '../components/ModalEscala.vue'
 import ModalUsuarios from '../components/ModalUsuarios.vue'
 import ModalRelatorios from '../components/ModalRelatorios.vue'
 
-const tipoUsuario = ref<'visitante' | 'aluno' | 'servidor' | 'seguranca'>('servidor')
+const usuarioLogado = ref<any>(null)
+const tipoUsuario = ref<string>('visitante')
+
+const isDevMode = computed(() => usuarioLogado.value?.tipo === 'dev')
 
 const isModalVeiculoAberto = ref(false)
 const isModalPerfilAberto = ref(false)
@@ -203,6 +222,55 @@ const totalVagasGlobal = ref(200)
 const vagasOcupadas = ref(0)
 const acessosAuto = ref(0)
 const acessosManual = ref(0)
+const segurancaAtivo = ref<any>(null)
+
+const mapasDeComponente: Record<string, any> = {
+  visitante: DashVisitante,
+  aluno: DashAlunoServidor,
+  servidor: DashAlunoServidor, 
+  admin: DashAdmin,
+  seguranca: DashSeguranca 
+}
+
+const buscarConfiguracao = async () => {
+  try {
+    const res = await fetch('/api/users/configuracao')
+    const data = await res.json()
+    if (data && data.totalVagas) totalVagasGlobal.value = data.totalVagas
+  } catch (e) { console.error("Erro banco vagas", e) }
+}
+
+const buscarSegurancaAtivo = async () => {
+  try {
+    const res = await fetch('/api/users/escala/ativa')
+    if (res.ok) segurancaAtivo.value = await res.json()
+  } catch (e) { console.error("Erro banco seguranca", e) }
+}
+
+onMounted(() => {
+  const userStorage = localStorage.getItem('user')
+  
+  if (userStorage) {
+    usuarioLogado.value = JSON.parse(userStorage)
+    
+    if (usuarioLogado.value.tipo === 'dev') {
+      tipoUsuario.value = 'admin' 
+    } else {
+      tipoUsuario.value = usuarioLogado.value.tipo
+    }
+  }
+
+  buscarConfiguracao()
+  buscarSegurancaAtivo()
+})
+
+const salvarConfigCampus = async (novasVagas: number) => {
+  try {
+    await fetch('/api/users/configuracao', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ totalVagas: novasVagas }) })
+    totalVagasGlobal.value = novasVagas
+    isModalConfigCampusAberto.value = false
+  } catch (e) { console.error(e) }
+}
 
 const percentualOcupacao = computed(() => Math.round((vagasOcupadas.value / totalVagasGlobal.value) * 100))
 const dashOffsetVagas = computed(() => {
@@ -216,18 +284,11 @@ const registrarAcesso = (tipo: 'auto' | 'manual') => {
   else acessosManual.value++
 }
 
-const mapasDeComponente = {
-  visitante: DashVisitante,
-  aluno: DashAlunoServidor,
-  servidor: DashAdmin,
-  seguranca: DashSeguranca 
-}
-
-const componenteFilho = computed(() => mapasDeComponente[tipoUsuario.value] || DashAlunoServidor)
+const componenteFilho = computed(() => mapasDeComponente[tipoUsuario.value] || DashVisitante)
 
 const textoPainel = computed(() => {
   if (tipoUsuario.value === 'visitante') return 'Painel de Visitas'
-  if (tipoUsuario.value === 'servidor') return 'Dashboard Administrador'
+  if (tipoUsuario.value === 'admin') return 'Dashboard Administrador'
   if (tipoUsuario.value === 'seguranca') return 'Controle de Segurança'
   return 'Dashboard do Usuário'
 })
@@ -235,17 +296,16 @@ const textoPainel = computed(() => {
 const inicialUsuario = computed(() => {
   const p = tipoUsuario.value
   if (p === 'visitante') return 'V'
-  if (p === 'servidor') return 'A'
+  if (p === 'admin') return 'A'
   if (p === 'seguranca') return 'S'
+  if (p === 'servidor') return 'S'
+  if (p === 'aluno') return 'A'
   return 'U'
 })
 
 const abrirConfiguracaoHeader = () => {
-  if (tipoUsuario.value === 'servidor') {
-    isModalConfigCampusAberto.value = true
-  } else {
-    isModalPerfilAberto.value = true
-  }
+  if (tipoUsuario.value === 'admin') isModalConfigCampusAberto.value = true
+  else isModalPerfilAberto.value = true
 }
 
 const acaoAdmin = (contexto: string) => {
@@ -255,39 +315,65 @@ const acaoAdmin = (contexto: string) => {
   else if (contexto === 'relatorios') isModalRelatoriosAberto.value = true
 }
 
-const salvarConfigCampus = (novasVagas: number) => {
-  totalVagasGlobal.value = novasVagas
-  isModalConfigCampusAberto.value = false
+const handleLogout = () => { 
+  localStorage.clear()
+  window.location.href = '/' 
 }
 
-const handleLogout = () => { window.location.href = '/' }
 const abrirCadastroNormal = () => { dadosCamera.value = null; isModalVeiculoAberto.value = true }
 const abrirCadastroRapido = (dados: any) => { dadosCamera.value = dados; isModalVeiculoAberto.value = true }
 const fecharModalVeiculo = () => { isModalVeiculoAberto.value = false; dadosCamera.value = null }
-const receberNovoVeiculo = (dadosVeiculo: any) => { if (dadosVeiculo.isModoPortaria) registrarAcesso('manual'); fecharModalVeiculo() }
+const receberNovoVeiculo = async (dadosFormulario: any) => {
+  const userId = usuarioLogado.value?.id;
+  
+  if (!userId) {
+    alert("Erro: ID do usuário não carregado na sessão.");
+    return;
+  }
+
+  try {
+    let url = `/api/users/${userId}/veiculos`;
+    if (dadosFormulario.isAgendamento) {
+      url = `/api/users/${userId}/visitas`;
+    }
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dadosFormulario)
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(`Erro do Servidor: ${data.erro || 'Verifique o terminal do backend'}`);
+      console.error("Resposta de erro do Node:", data);
+      return; 
+    }
+
+    alert(dadosFormulario.isAgendamento ? 'Visita agendada com sucesso!' : 'Veículo salvo com sucesso!');
+    window.location.reload(); 
+    
+  } catch (error) {
+    console.error("Erro fatal no fetch:", error);
+    alert('Falha de conexão com a API. O Backend está rodando?');
+  }
+}
+
 const alternarTipoTeste = () => {
   if (tipoUsuario.value === 'aluno') tipoUsuario.value = 'visitante'
   else if (tipoUsuario.value === 'visitante') tipoUsuario.value = 'servidor'
   else if (tipoUsuario.value === 'servidor') tipoUsuario.value = 'seguranca'
+  else if (tipoUsuario.value === 'seguranca') tipoUsuario.value = 'admin'
   else tipoUsuario.value = 'aluno'
+  
   isDropdownAberto.value = false
 }
 </script>
 
 <style scoped>
-.animate-fadeIn {
-  animation: fadeIn 0.3s ease-out forwards;
-}
-.animate-scaleUp {
-  animation: scaleUp 0.15s ease-out forwards;
-  transform-origin: top right;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes scaleUp {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
+.animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+.animate-scaleUp { animation: scaleUp 0.15s ease-out forwards; transform-origin: top right; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes scaleUp { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 </style>

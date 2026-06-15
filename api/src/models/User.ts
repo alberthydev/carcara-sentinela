@@ -17,6 +17,7 @@ export interface IUser extends Document {
   sobrenome: string;
   tipo: "visitante" | "aluno" | "servidor";
   fotoUrl: string;
+  ativo: boolean;
   carros?: ICarro[];
 }
 
@@ -28,9 +29,10 @@ const UserSchema: Schema = new Schema(
     email: { type: String, required: false, sparse: true },
     nome: { type: String, required: true },
     sobrenome: { type: String, required: true },
+    ativo: { type: Boolean, required: true, default: true },
     tipo: {
       type: String,
-      enum: ["visitante", "aluno", "servidor"],
+      enum: ["visitante", "aluno", "servidor", "admin", "seguranca", "dev"],
       required: true,
       default: "visitante",
     },

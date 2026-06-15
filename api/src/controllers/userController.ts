@@ -39,7 +39,6 @@ export const googleAuth = async (
       usuario = await User.findOne({ cpf: cpf.trim() });
 
       if (usuario) {
-        // Se achou o usuário pelo CPF, vincula o e-mail do Google nele para os próximos logins
         usuario.email = email;
         if (fotoUrl) usuario.fotoUrl = fotoUrl;
         await usuario.save();
@@ -214,12 +213,45 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
         id: user._id,
         nome: `${user.nome} ${user.sobrenome}`,
         cpf: user.cpf,
-        tipo: user.tipo, // O tipo (visitante, aluno, servidor) agora vai para o Front-end
+        tipo: user.tipo,
         fotoUrl: user.fotoUrl
       }
     });
   } catch (erro) {
     console.error("Erro no login:", erro);
     res.status(500).json({ erro: "Erro interno no servidor." });
+  }
+};
+
+export const getAllUsersAdmin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const usuarios = await User.find().select('-senha').sort({ createdAt: -1 });
+    res.status(200).json(usuarios);
+  } catch (erro) {
+    console.error("Erro ao buscar usuários:", erro);
+    res.status(500).json({ erro: "Erro ao buscar a lista de usuários." });
+  }
+};
+
+export const updateUserAdmin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { nome, sobrenome, ativo } = req.body;
+    
+    const userAtualizado = await User.findByIdAndUpdate(
+      id, 
+      { nome, sobrenome, ativo }, 
+      { new: true }
+    ).select('-senha');
+
+    if (!userAtualizado) {
+      res.status(404).json({ erro: "Usuário não encontrado." });
+      return;
+    }
+
+    res.status(200).json(userAtualizado);
+  } catch (erro) {
+    console.error("Erro ao atualizar usuário:", erro);
+    res.status(500).json({ erro: "Erro ao atualizar os dados do usuário." });
   }
 };

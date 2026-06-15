@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors'; 
 import routes from './routes/routes';
+import { seedDatabase } from './seeder';
 
 const app = express();
 
@@ -12,7 +13,10 @@ const PORT = process.env.PORT || 3000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://banco_dados:27017/carcara_db';
 
 mongoose.connect(MONGO_URI)
-  .then(() => console.log('MongoDB Conectado'))
+  .then(() => {
+    console.log('MongoDB Conectado');
+    seedDatabase();
+  })
   .catch((err) => console.error('Erro ao conectar no MongoDB:', err));
 
 app.get('/', (req, res) => {
