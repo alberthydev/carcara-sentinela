@@ -5,7 +5,7 @@ const toMins = (t: string) => { const [h, m] = t.split(':').map(Number); return 
 
 const temConflito = async (dias: string[], start: string, end: string, excludeId: string | null = null) => {
   const s1 = toMins(start); const e1 = toMins(end);
-  const intervalos1 = s1 < e1 ? [[s1, e1]] : [[s1, 1440], [0, e1]]; // Resolve turnos que viram a noite (ex: 22:00 as 06:00)
+  const intervalos1 = s1 < e1 ? [[s1, e1]] : [[s1, 1440], [0, e1]];
 
   const query = excludeId ? { _id: { $ne: excludeId }, dias: { $in: dias } } : { dias: { $in: dias } };
   const escalasExistentes = await Escala.find(query);
@@ -16,7 +16,7 @@ const temConflito = async (dias: string[], start: string, end: string, excludeId
 
     for (let [startA, endA] of intervalos1) {
       for (let [startB, endB] of intervalos2) {
-        if (startA < endB && endA > startB) return true; // Deu conflito!
+        if (startA < endB && endA > startB) return true;
       }
     }
   }
