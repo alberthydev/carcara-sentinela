@@ -89,6 +89,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { fetchApi } from '../utils/api'
 
 const props = defineProps<{ isOpen: boolean; usuarioLogado: any }>()
 const emit = defineEmits(['close', 'atualizar'])
@@ -120,7 +121,7 @@ watch(() => props.isOpen, (aberto) => {
 const salvarEdicao = async () => {
   carregando.value = true
   try {
-    const res = await fetch(`/api/users/${props.usuarioLogado.id || props.usuarioLogado._id}/perfil`, {
+    const res = await fetchApi(`/api/users/${props.usuarioLogado.id || props.usuarioLogado._id}/perfil`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

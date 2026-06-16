@@ -15,6 +15,11 @@
 
 </div>
 
+## Links Uteis
+
+[Wiki do Projeto](https://github.com/alberthydev/carcara-sentinela/wiki)[
+Documentação API](https://portal.swaggerhub.com/apis/alberthydev/carcara-sentinela-api/1.0.0?source=catalog#/Auth/post_login)
+
 ## Problema
 
 Institutos Federais de Ensino são ambientes com grande e constante circulação de pessoas, estudantes, servidores e visitantes, o que os torna vulneráveis quando não há monitoramento adequado. Em instituições que atendem alunos menores de idade, essa vulnerabilidade é ainda mais crítica.
@@ -51,7 +56,7 @@ A solução é desenvolvida em **código aberto**, focada no cadastramento de se
 | Servidor / API       | Node.js + Express.js                    |
 | Frontend Web         | Vue.js                                  |
 | Banco de Dados       | MongoDB                                 |
-| Aquisição de dados   | Câmeras LPR (infraestrutura existente)  |
+| Aquisição de dados | Câmeras LPR (infraestrutura existente) |
 
 ---
 
