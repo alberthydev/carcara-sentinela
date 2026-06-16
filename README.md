@@ -51,8 +51,7 @@ A solução é desenvolvida em **código aberto**, focada no cadastramento de se
 | Servidor / API       | Node.js + Express.js                    |
 | Frontend Web         | Vue.js                                  |
 | Banco de Dados       | MongoDB                                 |
-| Aquisição de dados | Câmeras LPR (infraestrutura existente) |
-|                      |                                         |
+| Aquisição de dados   | Câmeras LPR (infraestrutura existente)  |
 
 ---
 
