@@ -17,8 +17,8 @@
 
 ## Links Uteis
 
-[Wiki do Projeto](https://github.com/alberthydev/carcara-sentinela/wiki)[
-Documentação API](https://portal.swaggerhub.com/apis/alberthydev/carcara-sentinela-api/1.0.0?source=catalog#/Auth/post_login)
+* [Wiki do Projeto](https://github.com/alberthydev/carcara-sentinela/wiki)
+* [Documentação API](https://portal.swaggerhub.com/apis/alberthydev/carcara-sentinela-api/1.0.0?source=catalog#/Auth/post_login)
 
 ## Problema
 
