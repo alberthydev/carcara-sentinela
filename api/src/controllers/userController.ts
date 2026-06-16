@@ -41,9 +41,9 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
         if (fotoUrl) usuario.fotoUrl = fotoUrl;
         await usuario.save();
       } else {
-        const partesNome = nomeCompleto.split(" ");
-        const nome = partesNome[0];
-        const sobrenome = partesNome.slice(1).join(" ") || " ";
+        const partesNomeGoogle = nomeCompleto.split(" ");
+        const nomeGoogle = partesNomeGoogle[0];
+        const sobrenomeGoogle = partesNomeGoogle.slice(1).join(" ") || " ";
 
         if (tipo === "aluno" || tipo === "servidor") {
           const dadosAcademicos = await Estudante.findOne({ cpf: cpf.trim() });
@@ -52,12 +52,30 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
             return;
           }
 
+          const nomeCompletoIFC = dadosAcademicos.nome ?? "";
+          const partesNomeIFC = nomeCompletoIFC.split(" ");
+          const nomeIFC = partesNomeIFC[0] || "";
+          const sobrenomeIFC = partesNomeIFC.slice(1).join(" ") || " ";
+
           usuario = await User.create({
-            cpf: cpf.trim(), matricula: dadosAcademicos.matricula, nome, sobrenome, email, tipo, fotoUrl, ativo: true,
+            cpf: cpf.trim(), 
+            matricula: dadosAcademicos.matricula, 
+            nome: nomeIFC, 
+            sobrenome: sobrenomeIFC, 
+            email, 
+            tipo, 
+            fotoUrl, 
+            ativo: true,
           });
         } else {
           usuario = await User.create({
-            cpf: cpf.trim(), nome, sobrenome, email, tipo: "visitante", fotoUrl, ativo: true,
+            cpf: cpf.trim(), 
+            nome: nomeGoogle, 
+            sobrenome: sobrenomeGoogle, 
+            email, 
+            tipo: "visitante", 
+            fotoUrl, 
+            ativo: true,
           });
         }
       }
@@ -118,6 +136,7 @@ export const registryUser = async (req: Request, res: Response): Promise<void> =
     await newUser.save();
     res.status(201).json({ mensagem: "Usuário cadastrado com sucesso!" });
   } catch (erro) {
+    console.error("ERRO NO CADASTRO DE USUÁRIO:", erro);
     res.status(500).json({ erro: "Erro interno do servidor." });
   }
 };

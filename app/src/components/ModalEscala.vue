@@ -151,7 +151,7 @@ const salvarEscala = async () => {
         body: JSON.stringify(form.value)
       })
     } else if (modo.value === 'edicao' && form.value._id) {
-      await fetch(`/api/users/escala/${form.value._id}`, {
+      await fetchApi(`/api/users/escala/${form.value._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form.value)

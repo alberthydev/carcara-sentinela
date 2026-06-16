@@ -289,7 +289,7 @@ const handleLogin = async () => {
       localStorage.setItem('user', JSON.stringify(dados.usuario))
       localStorage.setItem('token', dados.token) 
 
-      mensagem.value = 'Login realizado com sucesso!'
+      mensagem.value = `Bem-vindo de volta, ${dados.usuario?.nome || 'Usuário'}!`
       tipoAlerta.value = 'sucesso'
 
       setTimeout(() => {

@@ -167,7 +167,7 @@ const alternarStatus = async (user: Usuario) => {
   user.ativo = novoStatus; 
   
   try {
-    await fetch(`/api/users/admin/usuarios/${user._id}`, {
+    await fetchApi(`/api/users/admin/usuarios/${user._id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ativo: novoStatus })
@@ -196,7 +196,7 @@ const salvarUsuario = async () => {
         })
       })
     } else if (modo.value === 'edicao') {
-      await fetch(`/api/users/admin/usuarios/${form.value._id}`, {
+      await fetchApi(`/api/users/admin/usuarios/${form.value._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

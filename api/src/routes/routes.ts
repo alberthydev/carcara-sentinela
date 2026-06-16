@@ -16,7 +16,7 @@ const router = Router();
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 5,
+  limit: 15,
   standardHeaders: "draft-8",
   legacyHeaders: false,
   message: { erro: "Muitas tentativas de login. Tente novamente em alguns minutos." },
