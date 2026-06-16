@@ -193,6 +193,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import ModalListarVeiculos from './ModalListarVeiculos.vue'
+import { fetchApi } from '../utils/api'
 
 const props = defineProps<{ usuarioId?: string }>()
 const emit = defineEmits(['abrir-cadastro', 'abrir-edicao'])
@@ -202,23 +203,19 @@ const meusVeiculos = ref<any[]>([])
 const historicoAcesso = ref<any[]>([])
 
 const fetchVeiculos = async () => {
-  if (!props.usuarioId) return
+  if (!props.usuarioId) return;
   try {
-    const res = await fetch(`/api/users/${props.usuarioId}/veiculos`)
+    const res = await fetchApi(`/api/users/${props.usuarioId}/veiculos`)
     if (res.ok) meusVeiculos.value = await res.json()
-  } catch (e) {
-    console.error('Erro ao buscar veículos:', e)
-  }
+  } catch (e) { console.error("Erro ao buscar veículos:", e) }
 }
 
 const fetchHistorico = async () => {
-  if (!props.usuarioId) return
+  if (!props.usuarioId) return;
   try {
-    const res = await fetch(`/api/users/${props.usuarioId}/acessos`)
+    const res = await fetchApi(`/api/users/${props.usuarioId}/acessos`)
     if (res.ok) historicoAcesso.value = await res.json()
-  } catch (e) {
-    console.error('Erro ao buscar histórico:', e)
-  }
+  } catch (e) { console.error("Erro ao buscar histórico:", e) }
 }
 
 watch(

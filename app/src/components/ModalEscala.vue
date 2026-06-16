@@ -89,6 +89,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { fetchApi } from '../utils/api'
 
 const props = defineProps<{ isOpen: boolean }>()
 const emit = defineEmits(['close'])
@@ -118,7 +119,7 @@ const escala = ref<EscalaItem[]>([])
 
 const buscarEscala = async () => {
   try {
-    const res = await fetch('/api/users/escala')
+    const res = await fetchApi('/api/users/escala')
     escala.value = await res.json()
   } catch (e) {
     console.error("Erro ao buscar escala:", e)
@@ -144,7 +145,7 @@ const abrirEdicao = (item: EscalaItem) => {
 const salvarEscala = async () => {
   try {
     if (modo.value === 'cadastro') {
-      await fetch('/api/users/escala', {
+      await fetchApi('/api/users/escala', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form.value)

@@ -327,7 +327,12 @@
       @close="fecharModalVeiculo"
       @save="receberNovoVeiculo"
     />
-    <ModalPerfilUsuario :is-open="isModalPerfilAberto" @close="isModalPerfilAberto = false" />
+    <ModalPerfilUsuario 
+      :is-open="isModalPerfilAberto" 
+      :usuario-logado="usuarioLogado" 
+      @close="isModalPerfilAberto = false" 
+      @atualizar="atualizarDadosLocais"
+    />
     <ModalConfigCampus
       :is-open="isModalConfigCampusAberto"
       :vagas-atuais="totalVagasGlobal"
@@ -342,6 +347,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { fetchApi } from '../utils/api'
 
 import DashVisitante from '../components/DashVisitante.vue'
 import DashAlunoServidor from '../components/DashAlunoServidor.vue'
@@ -368,7 +374,16 @@ const isModalUsuariosAberto = ref(false)
 const isModalRelatoriosAberto = ref(false)
 const isDropdownAberto = ref(false)
 
-const dadosCamera = ref<{ placa: string; marca: string; modelo: string; cor: string } | null>(null)
+const dadosCamera = ref<{ 
+  _id?: string; 
+  placaOriginal?: string; 
+  placa: string; 
+  marca: string; 
+  modelo: string; 
+  cor: string;
+  dataVisita?: string;
+  horaVisita?: string;
+} | null>(null)
 
 const totalVagasGlobal = ref(200)
 const vagasOcupadas = ref(0)
@@ -386,7 +401,7 @@ const mapasDeComponente: Record<string, any> = {
 
 const buscarConfiguracao = async () => {
   try {
-    const res = await fetch('/api/users/configuracao')
+    const res = await fetchApi('/api/users/configuracao')
     const data = await res.json()
     if (data && data.totalVagas) totalVagasGlobal.value = data.totalVagas
   } catch (e) {
@@ -396,7 +411,7 @@ const buscarConfiguracao = async () => {
 
 const buscarVagasOcupadas = async () => {
   try {
-    const res = await fetch('/api/users/admin/vagas-ocupadas')
+    const res = await fetchApi('/api/users/admin/vagas-ocupadas')
     if (res.ok) {
       const data = await res.json()
       vagasOcupadas.value = data.ocupadas
@@ -414,7 +429,7 @@ const registrarAcesso = () => {
 
 const buscarSegurancaAtivo = async () => {
   try {
-    const res = await fetch('/api/users/escala/ativa')
+    const res = await fetchApi('/api/users/escala/ativa')
     if (res.ok) segurancaAtivo.value = await res.json()
   } catch (e) {
     console.error('Erro banco seguranca', e)
@@ -441,7 +456,7 @@ onMounted(() => {
 
 const salvarConfigCampus = async (novasVagas: number) => {
   try {
-    await fetch('/api/users/configuracao', {
+    await fetchApi('/api/users/configuracao', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ totalVagas: novasVagas }),
@@ -552,7 +567,7 @@ const fecharModalVeiculo = () => {
 const receberNovoVeiculo = async (dadosFormulario: any) => {
   try {
     if (dadosFormulario.isModoPortaria) {
-      const res = await fetch('/api/users/admin/acesso-manual', {
+      const res = await fetchApi('/api/users/admin/acesso-manual', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dadosFormulario),
@@ -635,6 +650,11 @@ const receberNovoVeiculo = async (dadosFormulario: any) => {
     console.error('Erro fatal no fetch:', error)
     alert('Falha de conexão com a API. O Backend está rodando?')
   }
+}
+
+const atualizarDadosLocais = (usuarioAtualizado: any) => {
+  usuarioLogado.value = { ...usuarioLogado.value, ...usuarioAtualizado };
+  localStorage.setItem('user', JSON.stringify(usuarioLogado.value));
 }
 
 const alternarTipoTeste = () => {

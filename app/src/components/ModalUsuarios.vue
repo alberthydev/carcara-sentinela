@@ -100,6 +100,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { fetchApi } from '../utils/api'
 
 const props = defineProps<{ isOpen: boolean }>()
 const emit = defineEmits(['close'])
@@ -131,7 +132,7 @@ const usuarios = ref<Usuario[]>([])
 
 const buscarUsuarios = async () => {
   try {
-    const res = await fetch('/api/users/admin/usuarios')
+    const res = await fetchApi('/api/users/admin/usuarios')
     if (res.ok) {
       usuarios.value = await res.json()
     }
@@ -181,7 +182,7 @@ const salvarUsuario = async () => {
   carregando.value = true;
   try {
     if (modo.value === 'cadastro') {
-      await fetch('/api/users/cadastro', {
+      await fetchApi('/api/users/cadastro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

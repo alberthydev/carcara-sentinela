@@ -78,6 +78,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { fetchApi } from '../utils/api'
 
 interface RegistroAdmin {
   _id: string
@@ -92,7 +93,7 @@ const historicoGeral = ref<RegistroAdmin[]>([])
 
 const fetchHistoricoGeral = async () => {
   try {
-    const res = await fetch('/api/users/admin/acessos')
+    const res = await fetchApi('/api/users/admin/acessos')
     if (res.ok) {
       historicoGeral.value = await res.json()
     }

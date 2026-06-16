@@ -302,6 +302,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { fetchApi } from '../utils/api'
 
 const emit = defineEmits(['abrir-cadastro-rapido', 'acesso-registrado'])
 
@@ -370,7 +371,7 @@ const acaoCadastrarLiberar = () => {
 
 const fetchHistoricoSeguranca = async () => {
   try {
-    const res = await fetch('/api/users/admin/acessos')
+    const res = await fetchApi('/api/users/admin/acessos')
     if (res.ok) {
       const dados = await res.json()
       historico.value = dados.map((d: any) => ({
@@ -390,7 +391,7 @@ const acaoLiberarSemCadastro = async () => {
   if (!eventoLPR.value) return
 
   try {
-    const res = await fetch('/api/users/admin/acesso-manual', {
+    const res = await fetchApi('/api/users/admin/acesso-manual', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -421,7 +422,7 @@ const resetarLeitura = () => {
 
 const carregarPlacasReais = async () => {
   try {
-    const res = await fetch('/api/users/placas-simulacao')
+    const res = await fetchApi('/api/users/placas-simulacao')
     if (res.ok) placasCadastradas.value = await res.json()
   } catch (e) {
     console.error('Erro ao carregar placas para simulação', e)
@@ -429,27 +430,24 @@ const carregarPlacasReais = async () => {
 }
 
 const conectarSSE = () => {
-  eventSource = new EventSource('/api/users/stream')
+  const token = localStorage.getItem('token') || '';
+  
+  eventSource = new EventSource(`/api/users/stream?token=${token}`);
+  
   eventSource.onmessage = (event) => {
-    const data = JSON.parse(event.data)
-
+    const data = JSON.parse(event.data);
+    
     filaLPR.value.push({
       placa: data.placa,
       status: data.status,
-      horaStr: new Date(data.timestamp).toLocaleTimeString('pt-BR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      }),
+      horaStr: new Date(data.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute:'2-digit', second:'2-digit' }),
       veiculo: { marca: data.marca, modelo: data.modelo, cor: data.cor },
-      usuario: data.motorista
-        ? { nome: data.motorista.nome, tipo: data.motorista.tipo }
-        : undefined,
-    })
-
-    processarFila()
-  }
-}
+      usuario: data.motorista ? { nome: data.motorista.nome, tipo: data.motorista.tipo } : undefined
+    });
+    
+    processarFila();
+  };
+};
 
 const gerarPlacaAleatoria = () => {
   const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -469,10 +467,10 @@ const iniciarSimuladorRobo = () => {
 
       if (placasCadastradas.value.length > 0 && Math.random() > 0.5) {
         const indexAleatorio = Math.floor(Math.random() * placasCadastradas.value.length)
-        placaAlvo = placasCadastradas.value[indexAleatorio]
+        placaAlvo = placasCadastradas.value[indexAleatorio] || placaAlvo
       }
 
-      fetch('/api/users/evento', {
+      fetchApi('/api/users/evento', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ placa: placaAlvo }),

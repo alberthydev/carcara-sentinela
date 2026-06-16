@@ -214,6 +214,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import ModalListarVisitas from './ModalListarVisitas.vue'
+import { fetchApi } from '../utils/api'
 
 const props = defineProps<{ usuarioId?: string }>()
 
@@ -226,7 +227,7 @@ const fetchVisitas = async () => {
   if (!props.usuarioId) return
 
   try {
-    const res = await fetch(`/api/users/${props.usuarioId}/visitas`)
+    const res = await fetchApi(`/api/users/${props.usuarioId}/visitas`)
     if (res.ok) {
       visitas.value = await res.json()
     }
