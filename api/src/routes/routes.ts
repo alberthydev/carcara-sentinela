@@ -3,15 +3,37 @@ import {
   registryUser,
   loginUser,
   googleAuth,
-  getAllUsersAdmin, 
+  getAllUsersAdmin,
   updateUserAdmin,
 } from "../controllers/userController";
 import { Estudante } from "../models/Estudante";
 import rateLimit from "express-rate-limit";
 import { lprStream, simularLeituraLPR } from "../controllers/lprController";
-import { getConfiguracao, updateConfiguracao } from "../controllers/configuracaoController";
-import { getEscalas, createEscala, updateEscala, getEscalaAtiva } from "../controllers/escalaController";
-import { adicionarVeiculo, getVeiculos, agendarVisita, getVisitasUsuario } from "../controllers/veiculoVisitaController";
+import {
+  getConfiguracao,
+  updateConfiguracao,
+} from "../controllers/configuracaoController";
+import {
+  getEscalas,
+  createEscala,
+  updateEscala,
+  getEscalaAtiva,
+} from "../controllers/escalaController";
+import {
+  adicionarVeiculo,
+  getVeiculos,
+  agendarVisita,
+  getVisitasUsuario,
+  getHistoricoAcessos,
+  getTodosAcessos,
+  registroManual,
+  getPlacasParaSimulacao,
+  getVagasOcupadas,
+  inativarVisita,
+  editarVisita,
+  removerVeiculo,
+  editarVeiculo,
+} from "../controllers/veiculoVisitaController";
 
 const router = Router();
 
@@ -60,7 +82,10 @@ router.post("/admin/mock-estudante", async (req: Request, res: Response) => {
     res.status(500).send("Erro ao mockar dados");
   }
 });
+router.get("/admin/acessos", getTodosAcessos);
+router.get("/admin/vagas-ocupadas", getVagasOcupadas);
 router.get("/admin/usuarios", getAllUsersAdmin);
+router.post("/admin/acesso-manual", registroManual);
 router.put("/admin/usuarios/:id", updateUserAdmin);
 
 router.post("/login", authLimiter, loginUser);
@@ -82,5 +107,14 @@ router.get("/:id/veiculos", getVeiculos);
 
 router.post("/:id/visitas", agendarVisita);
 router.get("/:id/visitas", getVisitasUsuario);
+router.get("/:id/acessos", getHistoricoAcessos);
+
+router.get("/placas-simulacao", getPlacasParaSimulacao);
+
+router.put("/visitas/:visitaId/inativar", inativarVisita);
+router.put("/visitas/:visitaId", editarVisita);
+
+router.delete("/:id/veiculos/:placa", removerVeiculo);
+router.put("/:id/veiculos/:placa", editarVeiculo);
 
 export default router;

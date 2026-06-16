@@ -123,7 +123,7 @@
               id="cpf"
               v-model="loginForm.cpf"
               type="text"
-              v-maska="'###.###.###-##'"
+              @input="aplicarMascaraCpf"
               placeholder="111.222.333-44"
               class="w-full bg-[#F9F9F9] border border-gray-200 rounded-lg py-3 px-4 text-base outline-none focus:border-carcara-laranja focus:bg-white transition-all"
               required
@@ -213,7 +213,7 @@
             id="cpfVinculo"
             v-model="loginForm.cpf"
             type="text"
-            v-maska="'###.###.###-##'"
+            @input="aplicarMascaraCpf"
             placeholder="111.222.333-44"
             class="w-full bg-[#F9F9F9] border border-gray-200 rounded-lg py-3 px-4 text-base outline-none focus:border-carcara-laranja focus:bg-white transition-all"
             required
@@ -245,6 +245,21 @@ const loginForm = reactive({
   rememberMe: false,
 })
 
+const aplicarMascaraCpf = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  let valor = input.value.replace(/\D/g, '')
+
+  if (valor.length > 11) {
+    valor = valor.slice(0, 11)
+  }
+
+  valor = valor.replace(/(\d{3})(\d)/, '$1.$2')
+  valor = valor.replace(/(\d{3})(\d)/, '$1.$2')
+  valor = valor.replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+
+  loginForm.cpf = valor
+}
+
 const mensagem = ref('')
 const tipoAlerta = ref('')
 const carregando = ref(false)
@@ -272,7 +287,7 @@ const handleLogin = async () => {
       const tipo = dados.usuario.tipo
 
       localStorage.setItem('user', JSON.stringify(dados.usuario))
-      localStorage.setItem('token', dados.token || 'token-provisorio') // Ajuste vital aqui
+      localStorage.setItem('token', dados.token || 'token-provisorio')
 
       mensagem.value = 'Login realizado com sucesso!'
       tipoAlerta.value = 'sucesso'
