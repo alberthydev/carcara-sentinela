@@ -31,7 +31,6 @@ O **Carcará Sentinela** propõe um ecossistema de software integrado às câmer
 
 A solução é desenvolvida em **código aberto**, focada no cadastramento de servidores, alunos e visitantes, e gerenciada pelo próprio setor responsável da instituição. Indo além de uma barreira física, o sistema atua na **prevenção de incidentes** e no **controle de acessos indevidos**, gerando registros ágeis que promovem transparência para gestores, alunos e visitantes, sem restringir o caráter público da instituição.
 
-
 ---
 
 ## Objetivos
@@ -46,18 +45,19 @@ A solução é desenvolvida em **código aberto**, focada no cadastramento de se
 
 ## Stack Tecnológica
 
-| Camada | Tecnologia |
-|---|---|
-| Linguagem base | JavaScript / TypeScript |
-| Servidor / API | Node.js + Express.js |
-| Frontend Web | Vue.js |
-| Aplicativo Mobile | Ionic + Vue |
-| Banco de Dados | MongoDB |
+| Camada               | Tecnologia                              |
+| -------------------- | --------------------------------------- |
+| Linguagem base       | JavaScript / TypeScript                 |
+| Servidor / API       | Node.js + Express.js                    |
+| Frontend Web         | Vue.js                                  |
+| Banco de Dados       | MongoDB                                 |
 | Aquisição de dados | Câmeras LPR (infraestrutura existente) |
+|                      |                                         |
 
 ---
 
 ## Arquitetura do Sistema
+
 ```mermaid
 flowchart TD
     A["Câmeras LPR (2x)"] e1@-->|JSON| B{"API de Ingestão \n(Express.js)"}
@@ -70,7 +70,7 @@ flowchart TD
     e3@{ curve: linear }
     e4@{ curve: linear }
     e5@{ curve: linear }
-    
+  
     style A fill:#dce8f5,stroke:#aac4e0
     style B fill:#D6FFDD,stroke:#00FF59
     style C fill:#EDEDED,stroke:#5E5E5E
@@ -79,9 +79,8 @@ flowchart TD
     style F fill:#FFFDA1,stroke:#FFFD00
 ```
 
-
 ## Fluxo de Acesso Veicular
- 
+
 ```mermaid
 flowchart LR
     A([Chegada do\nVeículo]) --> B[Leitura da Placa\ndo Veículo com LPR]
@@ -109,9 +108,9 @@ flowchart LR
     style I fill:#dcf5dc,stroke:#aae0aa
     style H fill:#dce8f5,stroke:#aac4e0
 ```
- 
+
 ## Fluxo do Aplicativo Mobile
- 
+
 ```mermaid
 flowchart LR
     L([Login]) --> R1[Possui Registro\nServidor/Aluno]
@@ -178,12 +177,12 @@ A eficácia do sistema será medida pela comparação entre:
 
 ## Equipe
 
-| Nome | Papel |
-|---|---|
-| Hygor Marques | Aluno pesquisador |
-| Iarla Brito | Aluna pesquisadora |
-| Isadora Cozendey | Aluna pesquisadora |
-| Tiago Heineck | Professor orientador |
+| Nome             | Papel                |
+| ---------------- | -------------------- |
+| Hygor Marques    | Aluno pesquisador    |
+| Iarla Brito      | Aluna pesquisadora   |
+| Isadora Cozendey | Aluna pesquisadora   |
+| Tiago Heineck    | Professor orientador |
 | Tiago Gonçalves | Professor orientador |
 | Fabricio Bizzoto | Professor orientador |
 
@@ -194,19 +193,19 @@ A eficácia do sistema será medida pela comparação entre:
 
 ## Cronograma
 
-| Atividade | Fev | Mar | Abr | Mai | Jun |
-|---|:---:|:---:|:---:|:---:|:---:|
-| Definição do tema do projeto | ✅ | | | | |
-| Definição de requisitos e estudo do padrão JSON das câmeras LPR | | ✅ | | | |
-| Levantamento de referências | | ✅ | | | |
-| Escolha das tecnologias | | ✅ | | | |
-| Planejamento dos procedimentos | | ✅ | | | |
-| Modelagem do Banco de Dados e Setup do Ambiente | | | ✅ | | |
-| Desenvolvimento da API de Ingestão | | | ✅ | ✅ | |
-| Desenvolvimento do App de Cadastro | | | ✅ | ✅ | |
-| Desenvolvimento do Dashboard do Segurança | | | | ✅ | ✅ |
-| Testes de Integração e Homologação na Guarita | | | | | ✅ |
-| Finalização do Relatório Técnico e Apresentação do PI com MVP | | | | | ✅ |
+| Atividade                                                           | Fev | Mar | Abr | Mai | Jun |
+| ------------------------------------------------------------------- | :-: | :-: | :-: | :-: | :-: |
+| Definição do tema do projeto                                      | ✅ |    |    |    |    |
+| Definição de requisitos e estudo do padrão JSON das câmeras LPR |    | ✅ |    |    |    |
+| Levantamento de referências                                        |    | ✅ |    |    |    |
+| Escolha das tecnologias                                             |    | ✅ |    |    |    |
+| Planejamento dos procedimentos                                      |    | ✅ |    |    |    |
+| Modelagem do Banco de Dados e Setup do Ambiente                     |    |    | ✅ |    |    |
+| Desenvolvimento da API de Ingestão                                 |    |    | ✅ | ✅ |    |
+| Desenvolvimento do App de Cadastro                                  |    |    | ✅ | ✅ |    |
+| Desenvolvimento do Dashboard do Segurança                          |    |    |    | ✅ | ✅ |
+| Testes de Integração e Homologação na Guarita                   |    |    |    |    | ✅ |
+| Finalização do Relatório Técnico e Apresentação do PI com MVP |    |    |    |    | ✅ |
 
 ---
 
