@@ -469,15 +469,32 @@ const gerarPlacaAleatoria = () => {
 }
 
 const gerarCarroAleatorio = () => {
-  const marcas = ['Toyota', 'Honda', 'Chevrolet', 'Volkswagen', 'Fiat', 'Hyundai', 'Renault']
-  const modelos = ['Corolla', 'Civic', 'Onix', 'Polo', 'Argo', 'HB20', 'Sandero']
-  const cores = ['Branco', 'Preto', 'Prata', 'Cinza', 'Vermelho', 'Azul']
+  const baseModelos: Record<string, string[]> = {
+    Chevrolet: ['Onix', 'Prisma', 'Cruze', 'Tracker', 'S10', 'Celta', 'Corsa'],
+    Fiat: ['Uno', 'Palio', 'Mobi', 'Argo', 'Cronos', 'Toro', 'Strada', 'Idea'],
+    Volkswagen: ['Gol', 'Fox', 'Polo', 'Virtus', 'T-Cross', 'Nivus', 'Saveiro', 'Jetta'],
+    Ford: ['Ka', 'Fiesta', 'Focus', 'EcoSport', 'Ranger'],
+    Toyota: ['Corolla', 'Etios', 'Yaris', 'Hilux', 'SW4'],
+    Honda: ['Civic', 'Fit', 'City', 'HR-V'],
+    Renault: ['Sandero', 'Logan', 'Duster', 'Kwid', 'Fluence'],
+    Hyundai: ['HB20', 'HB20S', 'Creta', 'Tucson', 'I30'],
+  };
   
+  const cores = ['Branco', 'Preto', 'Cinza', 'Prata', 'Vermelho', 'Azul', 'Verde', 'Amarelo'];
+
+  const marcas = Object.keys(baseModelos);
+  const marcaSorteada = marcas[Math.floor(Math.random() * marcas.length)] || 'Chevrolet';
+  
+  const modelosDaMarca = baseModelos[marcaSorteada] || ['Onix'];
+  const modeloSorteado = modelosDaMarca[Math.floor(Math.random() * modelosDaMarca.length)] || 'Onix';
+  
+  const corSorteada = cores[Math.floor(Math.random() * cores.length)];
+
   return {
-    marca: marcas[Math.floor(Math.random() * marcas.length)],
-    modelo: modelos[Math.floor(Math.random() * modelos.length)],
-    cor: cores[Math.floor(Math.random() * cores.length)]
-  }
+    marca: marcaSorteada,
+    modelo: modeloSorteado,
+    cor: corSorteada
+  };
 }
 
 let simuladorInterval: any = null

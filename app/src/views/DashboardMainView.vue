@@ -335,6 +335,7 @@
     <ModalCadastrarVeiculo
       :is-open="isModalVeiculoAberto"
       :tipo-usuario-visualizando="tipoUsuario"
+      :dados-iniciais="dadosCamera" 
       @close="fecharModalVeiculo"
       @save="receberNovoVeiculo"
     />

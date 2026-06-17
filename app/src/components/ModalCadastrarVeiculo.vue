@@ -203,9 +203,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 
-const props = defineProps<{ isOpen: boolean; tipoUsuarioVisualizando: string }>()
+const props = defineProps<{ 
+  isOpen: boolean; 
+  tipoUsuarioVisualizando: string;
+  dadosIniciais?: any;
+}>()
 const emit = defineEmits(['close', 'save'])
 
 const isAgendamento = computed(() => props.tipoUsuarioVisualizando === 'visitante')
@@ -251,6 +255,27 @@ const baseModelos = ref<Record<string, string[]>>({
   Honda: ['Civic', 'Fit', 'City', 'HR-V'],
   Renault: ['Sandero', 'Logan', 'Duster', 'Kwid', 'Fluence'],
   Hyundai: ['HB20', 'HB20S', 'Creta', 'Tucson', 'I30'],
+})
+
+watch(() => props.isOpen, (novo) => {
+  if (novo) {
+    if (props.dadosIniciais) {
+      form.value = {
+        placa: props.dadosIniciais.placa || '',
+        marca: props.dadosIniciais.marca === 'Desconhecida' ? '' : (props.dadosIniciais.marca || ''),
+        modelo: props.dadosIniciais.modelo === 'Desconhecido' ? '' : (props.dadosIniciais.modelo || ''),
+        cor: props.dadosIniciais.cor === 'Indefinida' ? '' : (props.dadosIniciais.cor || ''),
+        dataVisita: props.dadosIniciais.dataVisita || '',
+        horaVisita: props.dadosIniciais.horaVisita || '',
+        nomeMotorista: '',
+        tipoMotorista: '',
+      }
+    } else {
+      form.value = {
+        placa: '', marca: '', modelo: '', cor: '', dataVisita: '', horaVisita: '', nomeMotorista: '', tipoMotorista: '',
+      }
+    }
+  }
 })
 
 const aplicarMascaraData = (event: Event) => {
