@@ -59,11 +59,27 @@
             </div>
             <div class="flex flex-col gap-1">
               <label class="text-sm font-semibold text-[#1E0D01]">Entrada</label>
-              <input v-model="form.horaInicio" type="time" class="w-full bg-[#F9F9F9] border border-gray-200 rounded-lg py-3 px-4 text-sm outline-none focus:border-[#F79347]" required />
+              <input 
+                v-model="form.horaInicio" 
+                @input="(e) => aplicarMascaraHora(e, 'horaInicio')" 
+                type="text" 
+                placeholder="00:00" 
+                maxlength="5"
+                class="w-full bg-[#F9F9F9] border border-gray-200 rounded-lg py-3 px-4 text-sm outline-none focus:border-[#F79347]" 
+                required 
+              />
             </div>
             <div class="flex flex-col gap-1">
               <label class="text-sm font-semibold text-[#1E0D01]">Saída</label>
-              <input v-model="form.horaFim" type="time" class="w-full bg-[#F9F9F9] border border-gray-200 rounded-lg py-3 px-4 text-sm outline-none focus:border-[#F79347]" required />
+              <input 
+                v-model="form.horaFim" 
+                @input="(e) => aplicarMascaraHora(e, 'horaFim')" 
+                type="text" 
+                placeholder="00:00" 
+                maxlength="5"
+                class="w-full bg-[#F9F9F9] border border-gray-200 rounded-lg py-3 px-4 text-sm outline-none focus:border-[#F79347]" 
+                required 
+              />
             </div>
           </div>
         
@@ -93,6 +109,7 @@ import { fetchApi } from '../utils/api'
 
 const props = defineProps<{ isOpen: boolean }>()
 const emit = defineEmits(['close'])
+const houveAlteracao = ref(false)
 
 const modo = ref<'lista' | 'cadastro' | 'edicao'>('lista')
 
@@ -131,6 +148,7 @@ watch(() => props.isOpen, (novo) => {
     modo.value = 'lista'
     limparFormulario()
     buscarEscala()
+    houveAlteracao.value = false
   }
 })
 
@@ -142,26 +160,64 @@ const abrirEdicao = (item: EscalaItem) => {
   modo.value = 'edicao'
 }
 
+const aplicarMascaraHora = (event: Event, campo: 'horaInicio' | 'horaFim') => {
+  const input = event.target as HTMLInputElement
+  let valor = input.value.replace(/\D/g, '')
+
+  if (valor.length > 4) {
+    valor = valor.slice(0, 4)
+  }
+
+  if (valor.length >= 2) {
+    let horas = parseInt(valor.substring(0, 2))
+    if (horas > 23) horas = 23
+    valor = horas.toString().padStart(2, '0') + valor.substring(2)
+  }
+
+  if (valor.length >= 4) {
+    let minutos = parseInt(valor.substring(2, 4))
+    if (minutos > 59) minutos = 59
+    valor = valor.substring(0, 2) + minutos.toString().padStart(2, '0')
+  }
+
+  if (valor.length > 2) {
+    valor = valor.replace(/(\d{2})(\d{1,2})/, '$1:$2')
+  }
+
+  form.value[campo] = valor
+}
+
 const salvarEscala = async () => {
   try {
+    let res;
+
     if (modo.value === 'cadastro') {
-      await fetchApi('/api/users/escala', {
+      res = await fetchApi('/api/users/escala', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form.value)
       })
     } else if (modo.value === 'edicao' && form.value._id) {
-      await fetchApi(`/api/users/escala/${form.value._id}`, {
+      res = await fetchApi(`/api/users/escala/${form.value._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form.value)
       })
     }
     
+    if (res && !res.ok) {
+      const erroData = await res.json().catch(() => ({}));
+      
+      alert(erroData.erro || 'Erro ao salvar a escala. Verifique se há conflito de horários.');
+      return; 
+    }
+    houveAlteracao.value = true
+    
     await buscarEscala()
     voltarParaLista()
   } catch (e) {
     console.error("Erro ao salvar escala no banco:", e)
+    alert("Falha de conexão. O servidor está rodando?")
   }
 }
 
@@ -175,7 +231,7 @@ const voltarParaLista = () => {
 }
 
 const fecharModal = () => {
-  emit('close')
+  emit('close', houveAlteracao.value)
 }
 </script>
 <style scoped>

@@ -2,13 +2,13 @@
   <div class="w-[71%] shrink-0 flex flex-col gap-[20px] animate-fadeIn">
     <div class="flex items-center gap-4">
       <h2 class="text-[22px] font-bold text-[#1E0D01] flex items-center gap-2">
-        Controle de Acesso — Cancela
+        Controle de Acesso - Cancela
       </h2>
       <div class="flex items-center gap-2 text-sm font-semibold">
         <span class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></span>
         <span class="text-green-600">Câmera online</span>
       </div>
-      <span class="text-[#FD7917] text-sm font-medium ml-2"> — {{ textoStatusCamera }} </span>
+      <span class="text-[#FD7917] text-sm font-medium ml-2"> {{ textoStatusCamera }} </span>
     </div>
 
     <div
@@ -57,7 +57,7 @@
           Placa {{ eventoLPR.placa }} identificada - {{ eventoLPR.horaStr }}
         </p>
         <p class="text-[13px] text-[#AAB1BD] mt-1" v-else>
-          Monitorando — aguardando próximo veículo.
+          Monitorando - aguardando próximo veículo.
         </p>
 
         <div class="flex items-center gap-4 mt-4 text-[13px]">
@@ -319,6 +319,8 @@ interface HistoricoItem {
   tipo: string
   veiculo: string
   hora: string
+  horaSaida?: string
+  placaRaw?: string
   status: 'Autorizado' | 'Manual'
 }
 
@@ -374,13 +376,21 @@ const fetchHistoricoSeguranca = async () => {
     const res = await fetchApi('/api/users/admin/acessos')
     if (res.ok) {
       const dados = await res.json()
-      historico.value = dados.map((d: any) => ({
-        usuario: d.nome !== 'Desconhecido' ? d.nome : '—',
-        tipo: d.tipo,
-        veiculo: d.carro,
-        hora: d.horaEntrada,
-        status: d.isManual ? 'Manual' : 'Autorizado',
-      }))
+      historico.value = dados.map((d: any) => {
+        const stringVeiculo = d.marca 
+          ? `${d.marca} | ${d.modelo} | ${d.cor} | ${d.placa || d.carro}` 
+          : (d.carro || d.placa || 'Desconhecido');
+
+        return {
+          usuario: d.nome !== 'Desconhecido' ? d.nome : '—',
+          tipo: d.tipo,
+          veiculo: stringVeiculo,
+          hora: d.horaEntrada,
+          horaSaida: d.horaSaida,
+          placaRaw: d.placa || d.carro,
+          status: d.isManual ? 'Manual' : 'Autorizado',
+        }
+      })
     }
   } catch (e) {
     console.error('Erro ao buscar histórico:', e)
@@ -458,22 +468,54 @@ const gerarPlacaAleatoria = () => {
   return placa
 }
 
+const gerarCarroAleatorio = () => {
+  const marcas = ['Toyota', 'Honda', 'Chevrolet', 'Volkswagen', 'Fiat', 'Hyundai', 'Renault']
+  const modelos = ['Corolla', 'Civic', 'Onix', 'Polo', 'Argo', 'HB20', 'Sandero']
+  const cores = ['Branco', 'Preto', 'Prata', 'Cinza', 'Vermelho', 'Azul']
+  
+  return {
+    marca: marcas[Math.floor(Math.random() * marcas.length)],
+    modelo: modelos[Math.floor(Math.random() * modelos.length)],
+    cor: cores[Math.floor(Math.random() * cores.length)]
+  }
+}
+
 let simuladorInterval: any = null
 
 const iniciarSimuladorRobo = () => {
   simuladorInterval = setInterval(() => {
     if (filaLPR.value.length < 2 && !eventoLPR.value) {
+      
       let placaAlvo = gerarPlacaAleatoria()
+      let carroMock = gerarCarroAleatorio()
 
-      if (placasCadastradas.value.length > 0 && Math.random() > 0.5) {
-        const indexAleatorio = Math.floor(Math.random() * placasCadastradas.value.length)
-        placaAlvo = placasCadastradas.value[indexAleatorio] || placaAlvo
+      const carrosDentro = historico.value.filter(h => !h.horaSaida && h.placaRaw);
+      
+      const chance = Math.random();
+
+      if (carrosDentro.length > 0 && chance < 0.40) {
+        const indexAleatorio = Math.floor(Math.random() * carrosDentro.length);
+        const carroSorteado = carrosDentro[indexAleatorio];
+        
+        if (carroSorteado && carroSorteado.placaRaw) {
+          placaAlvo = carroSorteado.placaRaw;
+        }
+      }
+
+      else if (placasCadastradas.value.length > 0 && chance < 0.80) {
+        const indexAleatorio = Math.floor(Math.random() * placasCadastradas.value.length);
+        placaAlvo = placasCadastradas.value[indexAleatorio] || placaAlvo;
       }
 
       fetchApi('/api/users/evento', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ placa: placaAlvo }),
+        body: JSON.stringify({ 
+          placa: placaAlvo,
+          marca: carroMock.marca,
+          modelo: carroMock.modelo,
+          cor: carroMock.cor
+        }),
       }).catch((e) => console.error('Falha ao simular LPR:', e))
     }
   }, 10000)

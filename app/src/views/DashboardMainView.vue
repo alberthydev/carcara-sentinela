@@ -95,13 +95,24 @@
             </button>
           </template>
 
-          <button
-            v-if="isDevMode"
-            @click="alternarTipoTeste"
-            class="w-full text-left py-2 px-2 hover:bg-white/10 rounded-lg text-xs transition-colors cursor-pointer text-orange-200 font-bold mb-2"
-          >
-            Alternar Papel (Dev)
-          </button>
+          <div v-if="isDevMode" class="relative group mb-2">
+            <button
+              class="w-full text-left py-2 px-2 hover:bg-white/10 rounded-lg text-xs transition-colors cursor-pointer text-orange-200 font-bold flex justify-between items-center"
+            >
+              <span>Alternar Papel (Dev)</span>
+              <svg class="w-4 h-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
+            <div class="absolute top-0 right-[100%] mr-2 w-36 bg-[#D17836] rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 border border-white/10 py-2 z-50">
+              <button @click="definirPapelTeste('admin')" class="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors">Administrador</button>
+              <button @click="definirPapelTeste('seguranca')" class="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors">Segurança</button>
+              <button @click="definirPapelTeste('servidor')" class="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors">Servidor</button>
+              <button @click="definirPapelTeste('aluno')" class="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors">Aluno</button>
+              <button @click="definirPapelTeste('visitante')" class="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors">Visitante</button>
+            </div>
+          </div>
 
           <button
             @click="handleLogout"
@@ -339,7 +350,7 @@
       @close="isModalConfigCampusAberto = false"
       @save="salvarConfigCampus"
     />
-    <ModalEscala :is-open="isModalEscalaAberto" @close="isModalEscalaAberto = false" />
+    <ModalEscala :is-open="isModalEscalaAberto" @close="lidarFechamentoEscala" />
     <ModalUsuarios :is-open="isModalUsuariosAberto" @close="isModalUsuariosAberto = false" />
     <ModalRelatorios :is-open="isModalRelatoriosAberto" @close="isModalRelatoriosAberto = false" />
   </div>
@@ -433,6 +444,14 @@ const buscarSegurancaAtivo = async () => {
     if (res.ok) segurancaAtivo.value = await res.json()
   } catch (e) {
     console.error('Erro banco seguranca', e)
+  }
+}
+
+const lidarFechamentoEscala = (houveAlteracao: boolean) => {
+  isModalEscalaAberto.value = false
+  
+  if (houveAlteracao) {
+    buscarSegurancaAtivo()
   }
 }
 
@@ -591,7 +610,7 @@ const receberNovoVeiculo = async (dadosFormulario: any) => {
     }
 
     if (dadosCamera.value && dadosCamera.value._id) {
-      const res = await fetch(`/api/users/visitas/${dadosCamera.value._id}`, {
+      const res = await fetchApi(`/api/users/visitas/${dadosCamera.value._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -612,7 +631,7 @@ const receberNovoVeiculo = async (dadosFormulario: any) => {
     }
 
     if (dadosCamera.value && dadosCamera.value.placaOriginal) {
-      const res = await fetch(`/api/users/${userId}/veiculos/${dadosCamera.value.placaOriginal}`, {
+      const res = await fetchApi(`/api/users/${userId}/veiculos/${dadosCamera.value.placaOriginal}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -628,7 +647,7 @@ const receberNovoVeiculo = async (dadosFormulario: any) => {
       return
     }
 
-    const res = await fetch(url, {
+    const res = await fetchApi(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(dadosFormulario),
@@ -657,13 +676,8 @@ const atualizarDadosLocais = (usuarioAtualizado: any) => {
   localStorage.setItem('user', JSON.stringify(usuarioLogado.value));
 }
 
-const alternarTipoTeste = () => {
-  if (tipoUsuario.value === 'aluno') tipoUsuario.value = 'visitante'
-  else if (tipoUsuario.value === 'visitante') tipoUsuario.value = 'servidor'
-  else if (tipoUsuario.value === 'servidor') tipoUsuario.value = 'seguranca'
-  else if (tipoUsuario.value === 'seguranca') tipoUsuario.value = 'admin'
-  else tipoUsuario.value = 'aluno'
-
+const definirPapelTeste = (novoPapel: string) => {
+  tipoUsuario.value = novoPapel
   isDropdownAberto.value = false
 }
 

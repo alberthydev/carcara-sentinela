@@ -111,7 +111,11 @@ export const getTodosAcessos = async (
           } catch (err) {}
         }
 
-        if (usuarioObj?.carros) {
+        if (acesso.marca && acesso.marca !== "Desconhecida") {
+          carroTexto = `${acesso.marca} | ${acesso.modelo} | ${acesso.cor} | ${acesso.placa}`;
+        } 
+
+        else if (usuarioObj?.carros) {
           const carro = usuarioObj.carros.find(
             (c: any) => c.placa === acesso.placa,
           );
@@ -124,9 +128,13 @@ export const getTodosAcessos = async (
           _id: acesso._id,
           nome: usuarioObj
             ? `${usuarioObj.nome} ${usuarioObj.sobrenome || ""}`.trim()
-            : acesso.nomeMotorista || "Desconhecido",
-          tipo: usuarioObj?.tipo || acesso.tipoMotorista || "Manual",
+            : acesso.nomeMotorista || "Não Informado",
+          tipo: usuarioObj?.tipo || acesso.tipoMotorista || "Acesso Manual",
           carro: carroTexto,
+          placa: acesso.placa,
+          marca: acesso.marca,
+          modelo: acesso.modelo,
+          cor: acesso.cor,
           horaEntrada: acesso.horaEntrada,
           horaSaida: acesso.horaSaida,
           isManual: !usuarioObj,
@@ -174,6 +182,9 @@ export const registroManual = async (
         nomeMotorista: nomeMotorista || "Não Informado",
         tipoMotorista: tipoMotorista || "Acesso Manual",
         placa: placa.toUpperCase(),
+        marca: marca || "Desconhecida",
+        modelo: modelo || "Desconhecido",
+        cor: cor || "Indefinida",
         data: dataHoje,
         horaEntrada: horaAgora,
       });
