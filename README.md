@@ -213,6 +213,19 @@ A eficácia do sistema será medida pela comparação entre:
 
 ---
 
+### Imagens do Sistema
+
+#### Login
+![login](https://github.com/alberthydev/carcara-sentinela/blob/main/assets/images_samples/sample_login.png)
+
+#### Admin
+![admin](https://github.com/alberthydev/carcara-sentinela/blob/main/assets/images_samples/sample_admin.png)
+
+#### Segurança
+![seguranca](https://github.com/alberthydev/carcara-sentinela/blob/main/assets/images_samples/sample_seguranca.png)
+
+---
+
 ## Referências
 
 - CASTRO, J. P. *Segurança universitária: um desafio em tempos de insegurança.* Integração Multidisciplinar, Cap. 5. DOI: 10.63330/aurumpub.006-005
