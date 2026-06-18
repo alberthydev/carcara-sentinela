@@ -216,14 +216,16 @@ A eficácia do sistema será medida pela comparação entre:
 ### Imagens do Sistema
 
 #### Login
-![login](https://github.com/alberthydev/carcara-sentinela/blob/main/assets/images_samples/sample_login.png)
-
-#### Admin
-![admin](https://github.com/alberthydev/carcara-sentinela/blob/main/assets/images_samples/sample_admin.png)
+![login](https://github.com/alberthydev/carcara-sentinela/blob/main/assets/images_samples/login.webp)
 
 #### Segurança
-![seguranca](https://github.com/alberthydev/carcara-sentinela/blob/main/assets/images_samples/sample_seguranca.png)
+![admin](https://github.com/alberthydev/carcara-sentinela/blob/main/assets/images_samples/seguranca.webp)
 
+#### Visitante
+![seguranca](https://github.com/alberthydev/carcara-sentinela/blob/main/assets/images_samples/visitantes.webp)
+
+#### Aluno/Servidor 
+![aluno/servidor](semlink)
 ---
 
 ## Referências
