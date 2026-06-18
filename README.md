@@ -224,8 +224,6 @@ A eficácia do sistema será medida pela comparação entre:
 #### Visitante
 ![seguranca](https://github.com/alberthydev/carcara-sentinela/blob/main/assets/images_samples/visitantes.webp)
 
-#### Aluno/Servidor 
-![aluno/servidor](semlink)
 ---
 
 ## Referências
