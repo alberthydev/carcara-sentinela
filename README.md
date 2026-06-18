@@ -68,8 +68,8 @@ flowchart TD
     e1@{ animate: true, curve: linear }
     B e2@<--> C[(MongoDB)]
     B e3@<--> D("Lógica de Whitelist \n(Cruzamento de Dados)")
-    D e4@<--> E("Dashboard Web \n(Vue.js)\nPainel Segurança")
-    D e5@<--> F("App Mobile (Ionic)\n Cadastro de Veículos\n Servidores/Alunos/Visitantes")
+    D e4@<--> E("Dashboard Segurança \n(Vue.js)\nPainel Segurança")
+    D e5@<--> F("Dashboard Usuários (Ionic)\n Cadastro de Veículos\n Servidores/Alunos/Visitantes")
     e2@{ curve: linear }
     e3@{ curve: linear }
     e4@{ curve: linear }
@@ -113,7 +113,7 @@ flowchart LR
     style H fill:#dce8f5,stroke:#aac4e0
 ```
 
-## Fluxo do Aplicativo Mobile
+## Fluxo do Usuário
 
 ```mermaid
 flowchart LR
