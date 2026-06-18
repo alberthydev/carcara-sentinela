@@ -183,7 +183,7 @@
       </div>
     </div>
 
-    <div class="hidden lg:block lg:w-1/2 min-h-screen bg-carcara-laranja"></div>
+    <div class="hidden lg:block lg:w-1/2 min-h-screen bg-carcara-laranja-bg"></div>
 
     <div
       v-if="promptCpfVinculo"
@@ -284,10 +284,10 @@ const handleLogin = async () => {
     const dados = await resposta.json()
 
     if (resposta.ok) {
-      const tipo = dados.usuario.tipo
+      // const tipo = dados.usuario.tipo
 
       localStorage.setItem('user', JSON.stringify(dados.usuario))
-      localStorage.setItem('token', dados.token) 
+      localStorage.setItem('token', dados.token)
 
       mensagem.value = `Bem-vindo de volta, ${dados.usuario?.nome || 'Usuário'}!`
       tipoAlerta.value = 'sucesso'
@@ -331,14 +331,15 @@ const handleGoogleLoginResponse = async (response: GoogleAuthResponse) => {
     const dados = await respostaBackend.json()
 
     if (respostaBackend.status === 202 && dados.vinculoPendente) {
-      mensagem.value = 'Olá! Identificamos sua conta Google, mas precisamos do seu CPF para concluir o acesso.'
+      mensagem.value =
+        'Olá! Identificamos sua conta Google, mas precisamos do seu CPF para concluir o acesso.'
       tipoAlerta.value = 'sucesso'
       promptCpfVinculo.value = true
       return
     }
 
     if (respostaBackend.ok) {
-      const tipo = dados.usuario?.tipo || 'visitante'
+      // const tipo = dados.usuario?.tipo || 'visitante'
       localStorage.setItem('user', JSON.stringify(dados.usuario))
       localStorage.setItem('token', dados.token)
 
@@ -423,7 +424,7 @@ const concluirVinculoGoogle = async () => {
     const dados = await reply.json()
 
     if (reply.ok) {
-      const tipo = dados.usuario?.tipo || 'visitante'
+      // const tipo = dados.usuario?.tipo || 'visitante'
       localStorage.setItem('user', JSON.stringify(dados.usuario))
       localStorage.setItem('token', dados.token)
 
