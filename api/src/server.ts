@@ -1,4 +1,7 @@
 import express from 'express';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import path from 'path';
 import mongoose from 'mongoose';
 import cors from 'cors'; 
 import routes from './routes/routes';
@@ -11,6 +14,7 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://banco_dados:27017/carcara_db';
+const swaggerDocument = YAML.load(path.join(__dirname, 'docs/openapi.yaml'));
 
 mongoose.connect(MONGO_URI)
   .then(() => {
@@ -23,8 +27,8 @@ app.get('/', (req, res) => {
   res.json({ mensagem: 'API Carcará Sentinela Operacional' });
 });
 
-app.use('/api/users', routes); 
-app.use('/api/lpr', routes);
+app.use('/api', routes); 
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);

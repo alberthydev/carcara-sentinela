@@ -1,0 +1,1107 @@
+openapi: 3.0.0
+info:
+  title: API Carcará Sentinela
+  version: 1.0.0
+  description: API de controle de acesso e monitoramento.
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        cpf: { type: string }
+        matricula: { type: string }
+        nome: { type: string }
+        sobrenome: { type: string }
+        email: { type: string }
+        tipo: { type: string, enum: [visitante, aluno, servidor, admin, seguranca, dev] }
+        ativo: { type: boolean }
+        fotoUrl: { type: string }
+        carros:
+          type: array
+          items:
+            type: object
+            properties:
+              placa: { type: string }
+              marca: { type: string }
+              modelo: { type: string }
+              cor: { type: string }
+
+    Visita:
+      type: object
+      properties:
+        usuarioId: { type: string }
+        dataVisita: { type: string }
+        horaVisita: { type: string }
+        horaEntrada: { type: string, nullable: true }
+        horaSaida: { type: string, nullable: true }
+        ativo: { type: boolean }
+        status: { type: string, enum: [agendada, em_andamento, concluida] }
+        veiculo:
+          type: object
+          properties:
+            placa: { type: string }
+            marca: { type: string }
+            modelo: { type: string }
+            cor: { type: string }
+
+    RegistroAcesso:
+      type: object
+      properties:
+        usuarioId: { type: string, nullable: true }
+        placa: { type: string }
+        marca: { type: string, nullable: true }
+        modelo: { type: string, nullable: true }
+        cor: { type: string, nullable: true }
+        tipoMotorista: { type: string, nullable: true }
+        data: { type: string }
+        horaEntrada: { type: string }
+        horaSaida: { type: string }
+        nomeMotorista: { type: string }
+
+    Escala:
+      type: object
+      properties:
+        nome: { type: string }
+        turno: { type: string }
+        dias: { type: array, items: { type: string } }
+        horaInicio: { type: string }
+        horaFim: { type: string }
+
+    Estudante:
+      type: object
+      properties:
+        cpf: { type: string }
+        matricula: { type: string }
+        nome: { type: string }
+
+    Configuracao:
+      type: object
+      properties:
+        campusId: { type: string }
+        totalVagas: { type: integer }
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths:
+  # ================= AUTH & PÚBLICAS =================
+  /login:
+    post:
+      summary: Autenticação de usuário
+      tags: [Auth]
+      requestBody:
+        content:
+          application/json:
+            schema: 
+              type: object
+              required: [cpf, password]
+              properties:
+                cpf: { type: string }
+                password: { type: string }
+      responses:
+        '200':
+          description: 'Login realizado com sucesso'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem: { type: string }
+                  token: { type: string }
+                  usuario:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      nome: { type: string }
+                      cpf: { type: string }
+                      tipo: { type: string }
+                      fotoUrl: { type: string }
+        '400':
+          description: 'Dados de login inválidos'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+        '401':
+          description: 'CPF ou senha inválidos'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+        '429': 
+          description: 'Muitas tentativas de login. Tente novamente em alguns minutos.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+        '500':
+          description: 'Erro interno no servidor'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+
+  /cadastro:
+    post:
+      summary: Cadastrar novo usuário
+      tags: [Auth]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/User' }
+      responses:
+        '201':
+          description: 'Usuário cadastrado com sucesso'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem: { type: string }
+        '400':
+          description: 'Erro de validação (senha fraca, foto inválida ou CPF já cadastrado)'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+        '500':
+          description: 'Erro interno do servidor'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+
+  /auth/google:
+    post:
+      summary: Autenticação via Google
+      tags: [Auth]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string }
+                tipo: { type: string }
+                cpf: { type: string }
+      responses:
+        '200':
+          description: 'Autenticação Google com sucesso'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem: { type: string }
+                  token: { type: string }
+                  usuario:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      nome: { type: string }
+                      cpf: { type: string }
+                      tipo: { type: string }
+                      fotoUrl: { type: string }
+        '202':
+          description: 'Vínculo pendente de CPF'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vinculoPendente: { type: boolean }
+                  mensagem: { type: string }
+                  perfilSugerido:
+                    type: object
+                    properties:
+                      nomeCompleto: { type: string }
+                      fotoUrl: { type: string }
+        '401':
+          description: 'Token inválido ou falha ao extrair dados'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+        '403':
+          description: 'CPF não encontrado no sistema do IFC (para alunos/servidores)'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+        '429': 
+          description: 'Muitas tentativas de login. Tente novamente em alguns minutos.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+
+  /validar-ifc/{cpf}/{matricula}:
+    get:
+      summary: Validar dados acadêmicos no sistema do IFC
+      tags: [Auth]
+      parameters:
+        - name: cpf
+          in: path
+          required: true
+          schema: { type: string }
+        - name: matricula
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: 'Dados validados com sucesso'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valido: { type: boolean }
+                  nome: { type: string }
+        '404':
+          description: 'Nenhuma matrícula encontrada'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valido: { type: boolean }
+                  erro: { type: string }
+        '500':
+          description: 'Erro interno ao consultar banco'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+
+  /admin/mock-estudante:
+    post:
+      summary: Inserir dados falsos do IFC (Para testes)
+      tags: [Auth]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Estudante' }
+      responses:
+        '201':
+          description: 'Mock inserido com sucesso'
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "OK"
+        '500':
+          description: 'Erro ao mockar dados'
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Erro ao mockar dados"
+
+  # ================= PERFIL PESSOAL =================
+  /{id}/perfil:
+    put:
+      summary: Atualizar próprio perfil
+      tags: [Perfil]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nome: { type: string }
+                sobrenome: { type: string }
+                password: { type: string }
+      responses:
+        '200':
+          description: 'Perfil atualizado com sucesso'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem: { type: string }
+                  usuario:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      nome: { type: string }
+                      sobrenome: { type: string }
+                      cpf: { type: string }
+                      matricula: { type: string }
+                      tipo: { type: string }
+        '404':
+          description: 'Usuário não encontrado'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+        '500':
+          description: 'Erro interno ao atualizar perfil'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+
+  /{id}/acessos:
+    get:
+      summary: Histórico pessoal de acessos
+      tags: [Perfil]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: 'Histórico retornado com sucesso'
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/RegistroAcesso' }
+
+  # ================= ADMINISTRAÇÃO =================
+  /admin/acessos:
+    get:
+      summary: Listar histórico geral de acessos
+      tags: [Admin]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Lista de acessos formatada
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    _id: { type: string }
+                    nome: { type: string }
+                    tipo: { type: string }
+                    carro: { type: string }
+                    placa: { type: string }
+                    marca: { type: string }
+                    modelo: { type: string }
+                    cor: { type: string }
+                    horaEntrada: { type: string }
+                    horaSaida: { type: string, nullable: true }
+                    isManual: { type: boolean }
+
+  /admin/vagas-ocupadas:
+    get:
+      summary: Estatísticas de vagas ocupadas hoje
+      tags: [Admin]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Estatísticas retornadas com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ocupadas: { type: integer }
+                  acessosAuto: { type: integer }
+                  acessosManual: { type: integer }
+        '500':
+          description: Erro ao calcular estatísticas de acesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+
+  /admin/usuarios:
+    get:
+      summary: Listar todos os usuários
+      tags: [Admin]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Lista de usuários (sem o campo senha)
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/User' } }
+        '500':
+          description: 'Erro ao buscar a lista de usuários'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+
+  /admin/usuarios/{id}:
+    put:
+      summary: Editar status ou dados do usuário
+      tags: [Admin]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ativo: { type: boolean }
+                nome: { type: string }
+                sobrenome: { type: string }
+      responses:
+        '200':
+          description: 'Usuário atualizado com sucesso'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '404':
+          description: 'Usuário não encontrado'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+        '500':
+          description: 'Erro interno ao atualizar os dados do usuário'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+
+  /admin/acesso-manual:
+    post:
+      summary: Registrar acesso manual via portaria
+      tags: [Admin]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                placa: { type: string }
+                marca: { type: string }
+                modelo: { type: string }
+                cor: { type: string }
+                nomeMotorista: { type: string }
+                tipoMotorista: { type: string }
+      responses:
+        '200':
+          description: Acesso manual registrado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem: { type: string }
+        '500':
+          description: Erro ao registrar acesso manual
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+
+  # ================= CONFIGURAÇÕES E ESCALA =================
+  /configuracao:
+    get:
+      summary: Buscar configurações (total de vagas)
+      tags: [Configurações]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': 
+          description: 'Configurações do sistema'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Configuracao' }
+        '500':
+          description: 'Erro interno ao buscar configurações'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+
+    put:
+      summary: Atualizar total de vagas
+      tags: [Configurações]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                totalVagas: { type: integer }
+      responses:
+        '200': 
+          description: 'Configurações atualizadas'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Configuracao' }
+        '500':
+          description: 'Erro interno ao atualizar configurações'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+
+  /escala:
+    get:
+      summary: Listar todas as escalas
+      tags: [Escala]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: 'Lista de escalas'
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Escala' }
+        '500':
+          description: 'Erro interno ao buscar escalas'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+                  
+    post:
+      summary: Criar nova escala
+      tags: [Escala]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Escala' }
+      responses:
+        '201':
+          description: 'Escala criada com sucesso'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Escala' }
+        '400':
+          description: 'Já existe um segurança escalado para este horário nestes dias'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+        '500':
+          description: 'Erro interno ao criar escala'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+
+  /escala/ativa:
+    get:
+      summary: Buscar segurança ativo no momento
+      tags: [Escala]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: 'Segurança ativo no momento (pode retornar vazio se ninguém estiver na escala)'
+          content:
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/Escala'
+        '500':
+          description: 'Erro interno ao buscar segurança ativo'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+
+  /escala/{id}:
+    put:
+      summary: Editar escala
+      tags: [Escala]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Escala' }
+      responses:
+        '200':
+          description: 'Escala atualizada'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Escala' }
+        '400':
+          description: 'O horário atualizado conflita com outro segurança'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+        '500':
+          description: 'Erro interno ao atualizar escala'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+
+  # ================= LPR E CÂMERA =================
+  /stream:
+    get:
+      summary: Stream real-time (SSE)
+      tags: [LPR e Câmera]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: 'Conexão SSE estabelecida'
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: 'Eventos em tempo real no formato SSE (ex: data: {...})'
+
+  /placas-simulacao:
+    get:
+      summary: Buscar placas para simulação do robô
+      tags: [LPR e Câmera]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Lista de placas cadastradas no sistema
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: string }
+        '500':
+          description: Erro ao buscar placas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+
+  /evento:
+    post:
+      summary: Simular leitura LPR
+      tags: [LPR e Câmera]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [placa]
+              properties:
+                      placa: { type: string }
+                      marca: { type: string }
+                      modelo: { type: string }
+                      cor: { type: string }
+                      timestamp: { type: string }
+                      status: { type: string, description: "'conhecido' ou 'desconhecido'" }
+                      isSaida: { type: boolean }
+      responses:
+        '200':
+          description: 'Evento simulado, processado e salvo no histórico'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem: { type: string }
+                  evento:
+                    type: object
+                    properties:
+                      placa: { type: string }
+                      marca: { type: string }
+                      modelo: { type: string }
+                      cor: { type: string }
+                      timestamp: { type: string }
+                      status: { type: string, description: "'conhecido' ou 'desconhecido'" }
+                      motorista:
+                        type: object
+                        nullable: true
+                        properties:
+                          nome: { type: string }
+                          tipo: { type: string }
+        '400':
+          description: 'Placa não informada na requisição'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+        '500':
+          description: 'Erro interno ao processar LPR'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+  
+  # ================= VEÍCULOS =================
+  /{id}/veiculos:
+    post:
+      summary: Adicionar veículo
+      tags: [Veículos]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                placa: { type: string }
+                marca: { type: string }
+                modelo: { type: string }
+                cor: { type: string }
+      responses:
+        '201':
+          description: 'Veículo criado'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem: { type: string }
+                  carros:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        placa: { type: string }
+                        marca: { type: string }
+                        modelo: { type: string }
+                        cor: { type: string }
+    get:
+      summary: Listar veículos do usuário
+      tags: [Veículos]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Lista de veículos (pode ser array vazio)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    placa: { type: string }
+                    marca: { type: string }
+                    modelo: { type: string }
+                    cor: { type: string }
+        '500':
+          description: Erro ao buscar veículos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+
+  /{id}/veiculos/{placa}:
+    put:
+      summary: Editar veículo
+      tags: [Veículos]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: placa
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                marca: { type: string }
+                modelo: { type: string }
+                cor: { type: string }
+      responses:
+        '200':
+          description: Veículo atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem: { type: string }
+                  carros:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        placa: { type: string }
+                        marca: { type: string }
+                        modelo: { type: string }
+                        cor: { type: string }
+        '404':
+          description: Usuário ou veículo não encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+        '500':
+          description: Erro ao atualizar veículo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+                  
+    delete:
+      summary: Remover veículo
+      tags: [Veículos]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: placa
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Veículo removido com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem: { type: string }
+        '404':
+          description: Usuário não encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+        '500':
+          description: Erro ao remover veículo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+
+  # ================= VISITAS =================
+  /{id}/visitas:
+    post:
+      summary: Agendar visita
+      tags: [Visitas]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dataVisita: { type: string }
+                horaVisita: { type: string }
+                placa: { type: string }
+                marca: { type: string }
+                modelo: { type: string }
+                cor: { type: string }
+      responses:
+        '201':
+          description: 'Visita agendada'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem: { type: string }
+                  visita: { $ref: '#/components/schemas/Visita' }
+    get:
+      summary: Listar visitas agendadas pelo usuário
+      tags: [Visitas]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Histórico de visitas do usuário
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Visita' }
+        '500':
+          description: Erro ao buscar visitas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+
+  /visitas/{visitaId}:
+    put:
+      summary: Editar visita
+      tags: [Visitas]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: visitaId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dataVisita: { type: string }
+                horaVisita: { type: string }
+                veiculo:
+                  type: object
+                  properties:
+                    placa: { type: string }
+                    marca: { type: string }
+                    modelo: { type: string }
+                    cor: { type: string }
+      responses:
+        '200':
+          description: Visita atualizada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem: { type: string }
+                  visita: { $ref: '#/components/schemas/Visita' }
+        '500':
+          description: Erro ao editar visita
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+
+  /visitas/{visitaId}/inativar:
+    put:
+      summary: Inativar visita
+      tags: [Visitas]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: visitaId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Visita cancelada/inativada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem: { type: string }
+        '500':
+          description: Erro ao inativar visita
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+servers:
+  - url: http://localhost:3000/api
+    description: Servidor Local de Desenvolvimento (Carcará Backend)
+  - url: https://virtserver.swaggerhub.com/alberthydev/carcara-sentinela-api/1.0.0
+    description: SwaggerHub API Auto Mocking

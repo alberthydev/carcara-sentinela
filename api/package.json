@@ -4,7 +4,8 @@
   "description": "API para o sistema Carcará Sentinela",
   "main": "src/server.ts",
   "scripts": {
-    "dev": "tsx watch src/server.ts"
+    "dev": "tsx watch src/server.ts",
+    "docs:api": "npm run dev"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -14,7 +15,9 @@
     "express-rate-limit": "^8.5.2",
     "google-auth-library": "^10.6.2",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^8.23.1"
+    "mongoose": "^8.23.1",
+    "swagger-ui-express": "^5.0.1",
+    "yamljs": "^0.3.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
@@ -22,6 +25,8 @@
     "@types/express": "^4.17.25",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.19.42",
+    "@types/swagger-ui-express": "^4.1.8",
+    "@types/yamljs": "^0.2.34",
     "tsx": "^4.7.2",
     "typescript": "^5.4.5"
   }
