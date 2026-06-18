@@ -69,7 +69,7 @@ flowchart TD
     B e2@<--> C[(MongoDB)]
     B e3@<--> D("Lógica de Whitelist \n(Cruzamento de Dados)")
     D e4@<--> E("Dashboard Segurança \n(Vue.js)\nPainel Segurança")
-    D e5@<--> F("Dashboard Usuários (Ionic)\n Cadastro de Veículos\n Servidores/Alunos/Visitantes")
+    D e5@<--> F("Dashboard Usuários (Vue.js)\n Cadastro de Veículos\n Servidores/Alunos/Visitantes")
     e2@{ curve: linear }
     e3@{ curve: linear }
     e4@{ curve: linear }
