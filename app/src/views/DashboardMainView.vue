@@ -474,8 +474,8 @@ const registrarAcesso = (tipoAcao?: string) => {
   buscarVagasOcupadas()
 
   if (tipoAcao && tipoAcao.endsWith('_reset') && componentePortariaRef.value) {
-    componentePortariaRef.value.resetarLeitura()
-    componentePortariaRef.value.fetchHistoricoSeguranca()
+    componentePortariaRef.value.resetarLeitura?.()
+    componentePortariaRef.value.fetchHistoricoSeguranca?.()
   }
 }
 
