@@ -70,32 +70,6 @@
             </svg>
             Continuar com Google
           </button>
-
-          <button
-            type="button"
-            class="w-full flex items-center justify-center gap-3 border border-gray-200 py-3 px-4 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors cursor-pointer"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <g clip-path="url(#clip0_268_220)">
-                <path d="M7.60413 7.60413H0V0H7.60413V7.60413Z" fill="#F1511B" />
-                <path d="M16.0001 7.60413H8.396V0H16.0001V7.60413Z" fill="#80CC28" />
-                <path d="M7.60394 16.0001H0V8.396H7.60394V16.0001Z" fill="#00ADEF" />
-                <path d="M16.0001 16.0001H8.396V8.396H16.0001V16.0001Z" fill="#FBBC09" />
-              </g>
-              <defs>
-                <clipPath id="clip0_268_220">
-                  <rect width="16" height="16" fill="white" />
-                </clipPath>
-              </defs>
-            </svg>
-            Continuar com Microsoft
-          </button>
         </div>
 
         <div
