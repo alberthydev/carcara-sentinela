@@ -368,7 +368,6 @@ const acaoCadastrarLiberar = () => {
     cor: eventoLPR.value?.veiculo?.cor || '',
     modelo: eventoLPR.value?.veiculo?.modelo || '',
   })
-  resetarLeitura()
 }
 
 const fetchHistoricoSeguranca = async () => {
@@ -377,9 +376,9 @@ const fetchHistoricoSeguranca = async () => {
     if (res.ok) {
       const dados = await res.json()
       historico.value = dados.map((d: any) => {
-        const stringVeiculo = d.marca 
-          ? `${d.marca} | ${d.modelo} | ${d.cor} | ${d.placa || d.carro}` 
-          : (d.carro || d.placa || 'Desconhecido');
+        const stringVeiculo = d.marca
+          ? `${d.marca} | ${d.modelo} | ${d.cor} | ${d.placa || d.carro}`
+          : d.carro || d.placa || 'Desconhecido'
 
         return {
           usuario: d.nome !== 'Desconhecido' ? d.nome : '—',
@@ -440,24 +439,30 @@ const carregarPlacasReais = async () => {
 }
 
 const conectarSSE = () => {
-  const token = localStorage.getItem('token') || '';
-  
-  eventSource = new EventSource(`/api/users/stream?token=${token}`);
-  
+  const token = localStorage.getItem('token') || ''
+
+  eventSource = new EventSource(`/api/users/stream?token=${token}`)
+
   eventSource.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    
+    const data = JSON.parse(event.data)
+
     filaLPR.value.push({
       placa: data.placa,
       status: data.status,
-      horaStr: new Date(data.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute:'2-digit', second:'2-digit' }),
+      horaStr: new Date(data.timestamp).toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }),
       veiculo: { marca: data.marca, modelo: data.modelo, cor: data.cor },
-      usuario: data.motorista ? { nome: data.motorista.nome, tipo: data.motorista.tipo } : undefined
-    });
-    
-    processarFila();
-  };
-};
+      usuario: data.motorista
+        ? { nome: data.motorista.nome, tipo: data.motorista.tipo }
+        : undefined,
+    })
+
+    processarFila()
+  }
+}
 
 const gerarPlacaAleatoria = () => {
   const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -478,23 +483,23 @@ const gerarCarroAleatorio = () => {
     Honda: ['Civic', 'Fit', 'City', 'HR-V'],
     Renault: ['Sandero', 'Logan', 'Duster', 'Kwid', 'Fluence'],
     Hyundai: ['HB20', 'HB20S', 'Creta', 'Tucson', 'I30'],
-  };
-  
-  const cores = ['Branco', 'Preto', 'Cinza', 'Prata', 'Vermelho', 'Azul', 'Verde', 'Amarelo'];
+  }
 
-  const marcas = Object.keys(baseModelos);
-  const marcaSorteada = marcas[Math.floor(Math.random() * marcas.length)] || 'Chevrolet';
-  
-  const modelosDaMarca = baseModelos[marcaSorteada] || ['Onix'];
-  const modeloSorteado = modelosDaMarca[Math.floor(Math.random() * modelosDaMarca.length)] || 'Onix';
-  
-  const corSorteada = cores[Math.floor(Math.random() * cores.length)];
+  const cores = ['Branco', 'Preto', 'Cinza', 'Prata', 'Vermelho', 'Azul', 'Verde', 'Amarelo']
+
+  const marcas = Object.keys(baseModelos)
+  const marcaSorteada = marcas[Math.floor(Math.random() * marcas.length)] || 'Chevrolet'
+
+  const modelosDaMarca = baseModelos[marcaSorteada] || ['Onix']
+  const modeloSorteado = modelosDaMarca[Math.floor(Math.random() * modelosDaMarca.length)] || 'Onix'
+
+  const corSorteada = cores[Math.floor(Math.random() * cores.length)]
 
   return {
     marca: marcaSorteada,
     modelo: modeloSorteado,
-    cor: corSorteada
-  };
+    cor: corSorteada,
+  }
 }
 
 let simuladorInterval: any = null
@@ -502,36 +507,33 @@ let simuladorInterval: any = null
 const iniciarSimuladorRobo = () => {
   simuladorInterval = setInterval(() => {
     if (filaLPR.value.length < 2 && !eventoLPR.value) {
-      
       let placaAlvo = gerarPlacaAleatoria()
-      let carroMock = gerarCarroAleatorio()
+      const carroMock = gerarCarroAleatorio()
 
-      const carrosDentro = historico.value.filter(h => !h.horaSaida && h.placaRaw);
-      
-      const chance = Math.random();
+      const carrosDentro = historico.value.filter((h) => !h.horaSaida && h.placaRaw)
 
-      if (carrosDentro.length > 0 && chance < 0.40) {
-        const indexAleatorio = Math.floor(Math.random() * carrosDentro.length);
-        const carroSorteado = carrosDentro[indexAleatorio];
-        
+      const chance = Math.random()
+
+      if (carrosDentro.length > 0 && chance < 0.4) {
+        const indexAleatorio = Math.floor(Math.random() * carrosDentro.length)
+        const carroSorteado = carrosDentro[indexAleatorio]
+
         if (carroSorteado && carroSorteado.placaRaw) {
-          placaAlvo = carroSorteado.placaRaw;
+          placaAlvo = carroSorteado.placaRaw
         }
-      }
-
-      else if (placasCadastradas.value.length > 0 && chance < 0.80) {
-        const indexAleatorio = Math.floor(Math.random() * placasCadastradas.value.length);
-        placaAlvo = placasCadastradas.value[indexAleatorio] || placaAlvo;
+      } else if (placasCadastradas.value.length > 0 && chance < 0.8) {
+        const indexAleatorio = Math.floor(Math.random() * placasCadastradas.value.length)
+        placaAlvo = placasCadastradas.value[indexAleatorio] || placaAlvo
       }
 
       fetchApi('/api/users/evento', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           placa: placaAlvo,
           marca: carroMock.marca,
           modelo: carroMock.modelo,
-          cor: carroMock.cor
+          cor: carroMock.cor,
         }),
       }).catch((e) => console.error('Falha ao simular LPR:', e))
     }
@@ -548,6 +550,11 @@ onMounted(() => {
 onUnmounted(() => {
   if (eventSource) eventSource.close()
   if (simuladorInterval) clearInterval(simuladorInterval)
+})
+
+defineExpose({
+  resetarLeitura,
+  fetchHistoricoSeguranca,
 })
 </script>
 

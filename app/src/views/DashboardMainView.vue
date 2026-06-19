@@ -101,16 +101,48 @@
             >
               <span>Alternar Papel (Dev)</span>
               <svg class="w-4 h-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </button>
 
-            <div class="absolute top-0 right-[100%] mr-2 w-36 bg-[#D17836] rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 border border-white/10 py-2 z-50">
-              <button @click="definirPapelTeste('admin')" class="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors">Administrador</button>
-              <button @click="definirPapelTeste('seguranca')" class="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors">Segurança</button>
-              <button @click="definirPapelTeste('servidor')" class="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors">Servidor</button>
-              <button @click="definirPapelTeste('aluno')" class="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors">Aluno</button>
-              <button @click="definirPapelTeste('visitante')" class="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors">Visitante</button>
+            <div
+              class="absolute top-0 right-[100%] mr-2 w-36 bg-[#D17836] rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 border border-white/10 py-2 z-50"
+            >
+              <button
+                @click="definirPapelTeste('admin')"
+                class="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors"
+              >
+                Administrador
+              </button>
+              <button
+                @click="definirPapelTeste('seguranca')"
+                class="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors"
+              >
+                Segurança
+              </button>
+              <button
+                @click="definirPapelTeste('servidor')"
+                class="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors"
+              >
+                Servidor
+              </button>
+              <button
+                @click="definirPapelTeste('aluno')"
+                class="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors"
+              >
+                Aluno
+              </button>
+              <button
+                @click="definirPapelTeste('visitante')"
+                class="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors"
+              >
+                Visitante
+              </button>
             </div>
           </div>
 
@@ -141,6 +173,7 @@
     >
       <component
         :is="componenteFilho"
+        ref="componentePortariaRef"
         :usuario-id="usuarioLogado?.id"
         :total-vagas="totalVagasGlobal"
         :vagas-ocupadas="vagasOcupadas"
@@ -335,14 +368,14 @@
     <ModalCadastrarVeiculo
       :is-open="isModalVeiculoAberto"
       :tipo-usuario-visualizando="tipoUsuario"
-      :dados-iniciais="dadosCamera" 
+      :dados-iniciais="dadosCamera"
       @close="fecharModalVeiculo"
       @save="receberNovoVeiculo"
     />
-    <ModalPerfilUsuario 
-      :is-open="isModalPerfilAberto" 
-      :usuario-logado="usuarioLogado" 
-      @close="isModalPerfilAberto = false" 
+    <ModalPerfilUsuario
+      :is-open="isModalPerfilAberto"
+      :usuario-logado="usuarioLogado"
+      @close="isModalPerfilAberto = false"
       @atualizar="atualizarDadosLocais"
     />
     <ModalConfigCampus
@@ -386,15 +419,15 @@ const isModalUsuariosAberto = ref(false)
 const isModalRelatoriosAberto = ref(false)
 const isDropdownAberto = ref(false)
 
-const dadosCamera = ref<{ 
-  _id?: string; 
-  placaOriginal?: string; 
-  placa: string; 
-  marca: string; 
-  modelo: string; 
-  cor: string;
-  dataVisita?: string;
-  horaVisita?: string;
+const dadosCamera = ref<{
+  _id?: string
+  placaOriginal?: string
+  placa: string
+  marca: string
+  modelo: string
+  cor: string
+  dataVisita?: string
+  horaVisita?: string
 } | null>(null)
 
 const totalVagasGlobal = ref(200)
@@ -435,8 +468,15 @@ const buscarVagasOcupadas = async () => {
   }
 }
 
-const registrarAcesso = () => {
+const componentePortariaRef = ref<any>(null)
+
+const registrarAcesso = (tipoAcao?: string) => {
   buscarVagasOcupadas()
+
+  if (tipoAcao && tipoAcao.endsWith('_reset') && componentePortariaRef.value) {
+    componentePortariaRef.value.resetarLeitura()
+    componentePortariaRef.value.fetchHistoricoSeguranca()
+  }
 }
 
 const buscarSegurancaAtivo = async () => {
@@ -450,7 +490,7 @@ const buscarSegurancaAtivo = async () => {
 
 const lidarFechamentoEscala = (houveAlteracao: boolean) => {
   isModalEscalaAberto.value = false
-  
+
   if (houveAlteracao) {
     buscarSegurancaAtivo()
   }
@@ -593,8 +633,13 @@ const receberNovoVeiculo = async (dadosFormulario: any) => {
         body: JSON.stringify(dadosFormulario),
       })
       if (!res.ok) throw new Error('Erro no backend ao registrar acesso manual')
+
       alert('Acesso manual liberado e registrado na tabela!')
-      window.location.reload()
+
+      isModalVeiculoAberto.value = false
+      dadosCamera.value = null
+
+      registrarAcesso('manual_reset')
       return
     }
 
@@ -632,16 +677,19 @@ const receberNovoVeiculo = async (dadosFormulario: any) => {
     }
 
     if (dadosCamera.value && dadosCamera.value.placaOriginal) {
-      const res = await fetchApi(`/api/users/${userId}/veiculos/${dadosCamera.value.placaOriginal}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          placa: dadosFormulario.placa,
-          marca: dadosFormulario.marca,
-          modelo: dadosFormulario.modelo,
-          cor: dadosFormulario.cor,
-        }),
-      })
+      const res = await fetchApi(
+        `/api/users/${userId}/veiculos/${dadosCamera.value.placaOriginal}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            placa: dadosFormulario.placa,
+            marca: dadosFormulario.marca,
+            modelo: dadosFormulario.modelo,
+            cor: dadosFormulario.cor,
+          }),
+        },
+      )
       if (!res.ok) throw new Error('Erro na edição do veículo')
       alert('Veículo atualizado com sucesso!')
       window.location.reload()
@@ -665,6 +713,10 @@ const receberNovoVeiculo = async (dadosFormulario: any) => {
     alert(
       dadosFormulario.isAgendamento ? 'Visita agendada com sucesso!' : 'Veículo salvo com sucesso!',
     )
+
+    isModalVeiculoAberto.value = false
+    dadosCamera.value = null
+    registrarAcesso('auto_reset')
     window.location.reload()
   } catch (error) {
     console.error('Erro fatal no fetch:', error)
@@ -673,8 +725,8 @@ const receberNovoVeiculo = async (dadosFormulario: any) => {
 }
 
 const atualizarDadosLocais = (usuarioAtualizado: any) => {
-  usuarioLogado.value = { ...usuarioLogado.value, ...usuarioAtualizado };
-  localStorage.setItem('user', JSON.stringify(usuarioLogado.value));
+  usuarioLogado.value = { ...usuarioLogado.value, ...usuarioAtualizado }
+  localStorage.setItem('user', JSON.stringify(usuarioLogado.value))
 }
 
 const definirPapelTeste = (novoPapel: string) => {
