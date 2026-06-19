@@ -203,19 +203,23 @@ const meusVeiculos = ref<any[]>([])
 const historicoAcesso = ref<any[]>([])
 
 const fetchVeiculos = async () => {
-  if (!props.usuarioId) return;
+  if (!props.usuarioId) return
   try {
     const res = await fetchApi(`/api/users/${props.usuarioId}/veiculos`)
     if (res.ok) meusVeiculos.value = await res.json()
-  } catch (e) { console.error("Erro ao buscar veículos:", e) }
+  } catch (e) {
+    console.error('Erro ao buscar veículos:', e)
+  }
 }
 
 const fetchHistorico = async () => {
-  if (!props.usuarioId) return;
+  if (!props.usuarioId) return
   try {
     const res = await fetchApi(`/api/users/${props.usuarioId}/acessos`)
     if (res.ok) historicoAcesso.value = await res.json()
-  } catch (e) { console.error("Erro ao buscar histórico:", e) }
+  } catch (e) {
+    console.error('Erro ao buscar histórico:', e)
+  }
 }
 
 watch(
@@ -233,7 +237,9 @@ const deletarVeiculo = async (placa: string) => {
   if (!confirm('Tem certeza que deseja remover este veículo?')) return
 
   try {
-    const res = await fetch(`/api/users/${props.usuarioId}/veiculos/${placa}`, { method: 'DELETE' })
+    const res = await fetchApi(`/api/users/${props.usuarioId}/veiculos/${placa}`, {
+      method: 'DELETE',
+    })
     if (res.ok) {
       alert('Veículo removido com sucesso!')
       fetchVeiculos()

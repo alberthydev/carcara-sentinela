@@ -256,7 +256,7 @@ const inativarVisita = async (id: string) => {
   if (!confirm('Tem certeza que deseja cancelar esta visita?')) return
 
   try {
-    const res = await fetch(`/api/users/visitas/${id}/inativar`, { method: 'PUT' })
+    const res = await fetchApi(`/api/users/visitas/${id}/inativar`, { method: 'PUT' })
     if (res.ok) {
       alert('Visita cancelada com sucesso!')
       fetchVisitas()
