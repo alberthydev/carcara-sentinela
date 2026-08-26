@@ -2,10 +2,13 @@
   "name": "carcara-sentinela-api",
   "version": "1.0.0",
   "description": "API para o sistema Carcará Sentinela",
-  "main": "src/server.ts",
+  "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "docs:api": "npm run dev"
+    "docs:api": "npm run dev",
+    "type-check": "tsc --noEmit",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
