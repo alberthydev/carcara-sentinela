@@ -59,7 +59,7 @@ jobs:
       - name: Detect build script
         id: has_build
         run: |
-          node -e "const scripts=require('./package.json').scripts||{}; require('fs').appendFileSync(process.env.GITHUB_OUTPUT, `has_build=${scripts.build ? 'true' : 'false'}\\n`)"
+          node -e "const scripts=require('./package.json').scripts||{}; require('fs').appendFileSync(process.env.GITHUB_OUTPUT, 'has_build=' + (scripts.build ? 'true' : 'false') + '\n')"
       - name: Build
         if: steps.has_build.outputs.has_build == 'true'
         run: npm run build
