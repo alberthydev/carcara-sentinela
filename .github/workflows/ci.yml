@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  pull_request:
+    paths:
+      - 'api/**'
+      - 'app/**'
+      - '.github/workflows/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'api/**'
+      - 'app/**'
+      - '.github/workflows/**'
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      app: ${{ steps.filter.outputs.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            api:
+              - 'api/**'
+              - '.github/workflows/**'
+            app:
+              - 'app/**'
+              - '.github/workflows/**'
+
+  api:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Type check
+        run: npm run type-check
+      - name: Detect build script
+        id: has_build
+        run: |
+          node -e "const scripts=require('./package.json').scripts||{}; require('fs').appendFileSync(process.env.GITHUB_OUTPUT, 'has_build=' + (scripts.build ? 'true' : 'false') + '\n')"
+      - name: Build
+        if: steps.has_build.outputs.has_build == 'true'
+        run: npm run build
+
+  app:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Type check
+        run: npm run type-check
+      - name: Build
+        run: npm run build
