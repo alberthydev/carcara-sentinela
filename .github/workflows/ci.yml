@@ -14,6 +14,9 @@ on:
       - 'app/**'
       - '.github/workflows/**'
 
+permissions:
+  contents: read
+
 jobs:
   changes:
     runs-on: ubuntu-latest
