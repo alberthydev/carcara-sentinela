@@ -184,7 +184,6 @@ A eficácia do sistema será medida pela comparação entre:
 | Nome             | Papel                |
 | ---------------- | -------------------- |
 | Hygor Marques    | Aluno pesquisador    |
-| Iarla Brito      | Aluna pesquisadora   |
 | Isadora Cozendey | Aluna pesquisadora   |
 | Tiago Heineck    | Professor orientador |
 | Tiago Gonçalves | Professor orientador |
