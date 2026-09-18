@@ -154,31 +154,6 @@ flowchart LR
 
 ---
 
-## Etapas de Desenvolvimento
-
-**a) Ingestão de Dados** — Integração com a API das câmeras LPR para recebimento de metadados em formato JSON
-
-**b) Persistência** — Modelagem do banco de dados para registro histórico dos fluxos de acesso
-
-**c) Módulo de Cadastro** — Interface para registro e gerenciamento de veículos de servidores, alunos e visitantes
-
-**d) Inteligência de Cruzamento** — Implementação da lógica de Whitelist para identificação automática de usuários cadastrados
-
-**e) Interface de Validação** — Painel de controle em tempo real para suporte à decisão da equipe de segurança
-
-**f) Homologação** — Testes de campo na guarita do campus para validar latência e acurácia do sistema
-
----
-
-## Métricas de Avaliação
-
-A eficácia do sistema será medida pela comparação entre:
-
-- Placas com **correspondência imediata** no banco de dados (identificação automática)
-- Placas que **exigiram intervenção manual** do segurança por ausência de cadastro
-
----
-
 ## Equipe
 
 | Nome             | Papel                |
