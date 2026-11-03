@@ -197,6 +197,53 @@ export const registroManual = async (
   }
 };
 
+export const cadastroRapidoPortaria = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { nomeUsuario, placa, marca, modelo, cor } = req.body;
+    const nome = typeof nomeUsuario === "string" ? nomeUsuario.trim() : "";
+
+    if (!nome || !placa || !marca || !modelo || !cor) {
+      res.status(400).json({ erro: "Informe o nome do usuário e os dados do veículo." });
+      return;
+    }
+
+    const partesNome = nome.split(/\s+/);
+    const primeiroNome = partesNome.shift();
+    const sobrenome = partesNome.join(" ");
+    const usuario = await User.findOne({
+      nome: { $regex: `^${primeiroNome}$`, $options: "i" },
+      ...(sobrenome ? { sobrenome: { $regex: `^${sobrenome}$`, $options: "i" } } : {}),
+    });
+
+    if (!usuario) {
+      res.status(404).json({ erro: `Usuário "${nome}" não encontrado.` });
+      return;
+    }
+
+    const placaNormalizada = placa.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const carroExistente = usuario.carros?.some(
+      (carro) => carro.placa.toUpperCase().replace(/[^A-Z0-9]/g, "") === placaNormalizada,
+    );
+    if (!carroExistente) {
+      if (!usuario.carros) usuario.carros = [];
+      usuario.carros.push({ placa: placaNormalizada, marca, modelo, cor, ano: 0 });
+      await usuario.save();
+    }
+
+    res.status(200).json({
+      mensagem: "Veículo cadastrado e associado ao usuário.",
+      usuario: `${usuario.nome} ${usuario.sobrenome}`.trim(),
+      placa: placaNormalizada,
+    });
+  } catch (error) {
+    console.error("Erro no cadastro rápido da portaria:", error);
+    res.status(500).json({ erro: "Erro ao cadastrar veículo para o usuário." });
+  }
+};
+
 export const getPlacasParaSimulacao = async (
   req: Request,
   res: Response,
@@ -235,10 +282,11 @@ export const getVagasOcupadas = async (
       timeZone: "America/Sao_Paulo",
     }).format(new Date());
 
-    const ocupadas = await RegistroAcesso.countDocuments({
+    const registrosAbertos = await RegistroAcesso.find({
       data: dataHoje,
       horaSaida: null,
-    });
+    }).select("placa").lean();
+    const ocupadas = new Set(registrosAbertos.map((acesso) => acesso.placa)).size;
 
     const todosAcessosHoje = await RegistroAcesso.find({
       data: dataHoje,

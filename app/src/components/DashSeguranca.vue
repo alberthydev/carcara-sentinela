@@ -4,10 +4,6 @@
       <h2 class="text-[22px] font-bold text-[#1E0D01] flex items-center gap-2">
         Controle de Acesso - Cancela
       </h2>
-      <div class="flex items-center gap-2 text-sm font-semibold">
-        <span class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></span>
-        <span class="text-green-600">Câmera online</span>
-      </div>
       <span class="text-[#FD7917] text-sm font-medium ml-2"> {{ textoStatusCamera }} </span>
     </div>
 
@@ -18,7 +14,15 @@
         class="w-[280px] h-[160px] bg-[#1A1C23] rounded-xl relative overflow-hidden flex flex-col items-center justify-center shrink-0"
       >
         <div class="absolute top-3 left-3 flex items-center gap-2 text-xs font-bold text-white/70">
-          <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> AO VIVO
+          <span
+            :class="[
+              'w-2 h-2 rounded-full',
+              camada === 1 && sseConectado
+                ? 'bg-red-500 animate-pulse'
+                : 'bg-gray-500',
+            ]"
+          ></span>
+          {{ camada === 2 ? (visionResult ? 'RESULTADO' : 'SEM RESULTADO') : sseConectado ? 'AO VIVO' : 'SEM SINAL' }}
         </div>
 
         <div v-if="eventoLPR" class="flex flex-col items-center gap-2 mt-4">
@@ -33,6 +37,25 @@
             {{ formatarPlaca(eventoLPR.placa) }}
           </div>
           <span class="text-white/50 text-xs">{{ eventoLPR.horaStr }}</span>
+        </div>
+
+        <div
+          v-else-if="camada === 2 && visionResult"
+          class="relative z-10 flex flex-col items-center gap-2"
+        >
+          <div
+            :class="[
+              'px-4 py-2 border-2 rounded-lg font-mono text-xl tracking-widest font-bold bg-black/70',
+              visionResult.liberacao_automatica
+                ? 'border-green-500 text-green-400'
+                : 'border-yellow-500 text-yellow-300',
+            ]"
+          >
+            {{ formatarPlaca(visionResult.placa_recomendada || '--------') }}
+          </div>
+          <span class="text-white/70 text-xs">
+            Confiança: {{ Math.round((visionResult.confianca_recomendada || 0) * 100) }}%
+          </span>
         </div>
 
         <div v-else class="flex flex-col items-center gap-2 text-white/30">
@@ -54,17 +77,36 @@
       <div class="flex flex-col justify-center flex-1 py-2">
         <h3 class="text-lg font-bold text-[#1E0D01]">Câmera da Cancela</h3>
         <p class="text-[13px] text-[#AAB1BD] mt-1" v-if="eventoLPR">
-          Placa {{ eventoLPR.placa }} identificada - {{ eventoLPR.horaStr }}
+          Placa {{ eventoLPR.placa }} {{ eventoLPR.isSaida ? 'registrou a saída' : 'identificada' }} -
+          {{ eventoLPR.horaStr }}
+        </p>
+        <p class="text-[13px] text-[#AAB1BD] mt-1" v-else-if="camada === 2 && visionResult">
+          Placa {{ visionResult.placa_recomendada }} recebida do vision-worker.
         </p>
         <p class="text-[13px] text-[#AAB1BD] mt-1" v-else>
-          Monitorando - aguardando próximo veículo.
+          {{ camada === 2 ? 'Aguardando resultado do vision-worker.' : 'Monitorando - aguardando próximo veículo.' }}
         </p>
 
         <div class="flex items-center gap-4 mt-4 text-[13px]">
-          <div class="flex items-center gap-1.5 text-green-600 font-semibold">
-            <span class="w-2 h-2 bg-green-500 rounded-full"></span> Câmera online
+          <div
+            :class="[
+              'flex items-center gap-1.5 font-semibold',
+              camada === 1 && sseConectado
+                ? 'text-green-600'
+                : 'text-red-600',
+            ]"
+          >
+            <span
+              :class="[
+                'w-2 h-2 rounded-full',
+                camada === 1 && sseConectado
+                  ? 'bg-green-500'
+                  : 'bg-red-500',
+              ]"
+            ></span>
+            {{ camada === 2 ? 'Vision worker' : sseConectado ? 'Câmera online' : 'Câmera offline' }}
           </div>
-          <span class="text-gray-400">SSE - cancela-01</span>
+          <span class="text-gray-400">{{ camada === 2 ? 'Processamento local' : 'SSE - cancela-01' }}</span>
         </div>
 
         <button
@@ -98,7 +140,9 @@
         </div>
         <div>
           <h3 class="font-bold text-[#1E0D01]">Monitoramento ativo</h3>
-          <p class="text-sm text-gray-400 mt-1">Próxima leitura simulada em ~15s</p>
+          <p class="text-sm text-gray-400 mt-1">
+            {{ camada === 2 ? 'Selecione um vídeo e resultado no painel Dev.' : 'Próxima leitura simulada em ~15s' }}
+          </p>
         </div>
       </div>
 
@@ -301,14 +345,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { fetchApi } from '../utils/api'
 
 const emit = defineEmits(['abrir-cadastro-rapido', 'acesso-registrado'])
+const props = defineProps<{
+  camada?: number
+  visionResult?: {
+    placa_recomendada?: string
+    confianca_recomendada?: number
+    liberacao_automatica?: boolean
+    status?: 'conhecido' | 'desconhecido' | 'revisao'
+    isSaida?: boolean
+  } | null
+}>()
+const camada = computed(() => props.camada ?? 1)
+const visionResult = computed(() => props.visionResult ?? null)
 
 interface EventoLPR {
   placa: string
   status: 'conhecido' | 'desconhecido'
+  isSaida?: boolean
   horaStr: string
   veiculo?: { marca: string; modelo: string; cor: string }
   usuario?: { nome: string; tipo: string; matricula?: string; fotoUrl?: string }
@@ -327,6 +384,29 @@ interface HistoricoItem {
 const eventoLPR = ref<EventoLPR | null>(null)
 const filaLPR = ref<EventoLPR[]>([])
 let eventSource: EventSource | null = null
+const sseConectado = ref(false)
+
+watch(
+  visionResult,
+  (resultado) => {
+    if (!resultado?.placa_recomendada) {
+      eventoLPR.value = null
+      return
+    }
+
+    eventoLPR.value = {
+      placa: resultado.placa_recomendada,
+      status: resultado.status === 'desconhecido' ? 'desconhecido' : 'conhecido',
+      isSaida: resultado.isSaida,
+      horaStr: new Date().toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }),
+    }
+  },
+  { immediate: true },
+)
 
 const historico = ref<HistoricoItem[]>([])
 const placasCadastradas = ref<string[]>([])
@@ -337,6 +417,22 @@ const textoStatusCamera = computed(() => {
   if (!eventoLPR.value) return 'próxima leitura em breve'
   if (eventoLPR.value.status === 'conhecido') return 'veículo liberado'
   return 'aguardando resolução'
+})
+
+watch(camada, (novaCamada, camadaAnterior) => {
+  if (novaCamada === camadaAnterior) return
+  if (novaCamada === 2) {
+    if (eventSource) eventSource.close()
+    eventSource = null
+    sseConectado.value = false
+    if (simuladorInterval) clearInterval(simuladorInterval)
+    simuladorInterval = null
+    eventoLPR.value = null
+    filaLPR.value = []
+  } else {
+    conectarSSE()
+    iniciarSimuladorRobo()
+  }
 })
 
 const formatarPlaca = (placa: string) => {
@@ -367,6 +463,7 @@ const acaoCadastrarLiberar = () => {
     marca: eventoLPR.value?.veiculo?.marca || '',
     cor: eventoLPR.value?.veiculo?.cor || '',
     modelo: eventoLPR.value?.veiculo?.modelo || '',
+    modoCadastro: true,
   })
 }
 
@@ -442,6 +539,14 @@ const conectarSSE = () => {
   const token = localStorage.getItem('token') || ''
 
   eventSource = new EventSource(`/api/users/stream?token=${token}`)
+
+  eventSource.onopen = () => {
+    sseConectado.value = true
+  }
+
+  eventSource.onerror = () => {
+    sseConectado.value = false
+  }
 
   eventSource.onmessage = (event) => {
     const data = JSON.parse(event.data)
@@ -542,13 +647,18 @@ const iniciarSimuladorRobo = () => {
 
 onMounted(() => {
   fetchHistoricoSeguranca()
-  carregarPlacasReais()
-  conectarSSE()
-  iniciarSimuladorRobo()
+  if (camada.value === 1) {
+    carregarPlacasReais()
+    conectarSSE()
+    iniciarSimuladorRobo()
+  }
 })
 
 onUnmounted(() => {
-  if (eventSource) eventSource.close()
+  if (eventSource) {
+    eventSource.close()
+    sseConectado.value = false
+  }
   if (simuladorInterval) clearInterval(simuladorInterval)
 })
 

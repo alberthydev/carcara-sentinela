@@ -70,6 +70,17 @@
           </div>
         </template>
 
+        <div v-if="isCadastroRapido" class="flex flex-col gap-1">
+          <label class="text-xs font-bold text-[#1E0D01]">Nome do usuário</label>
+          <input
+            v-model="form.nomeMotorista"
+            type="text"
+            placeholder="Nome completo cadastrado"
+            class="w-full h-[46px] px-4 border border-[#F79347] rounded-xl text-sm focus:outline-none"
+            required
+          />
+        </div>
+
         <template v-if="isModoPortaria">
           <h4
             class="text-xs font-bold text-[#FD7917] tracking-wider mt-2 mb-1 uppercase flex items-center gap-2"
@@ -193,6 +204,8 @@
                 ? 'Confirmar Agendamento'
                 : isModoPortaria
                   ? 'Liberar Acesso'
+                  : isCadastroRapido
+                    ? 'Cadastrar e Liberar'
                   : 'Cadastrar Carro'
             }}
           </button>
@@ -209,11 +222,15 @@ const props = defineProps<{
   isOpen: boolean; 
   tipoUsuarioVisualizando: string;
   dadosIniciais?: any;
+  modoCadastro?: boolean;
 }>()
 const emit = defineEmits(['close', 'save'])
 
 const isAgendamento = computed(() => props.tipoUsuarioVisualizando === 'visitante')
-const isModoPortaria = computed(() => props.tipoUsuarioVisualizando === 'seguranca')
+const isModoPortaria = computed(
+  () => props.tipoUsuarioVisualizando === 'seguranca' && !props.modoCadastro,
+)
+const isCadastroRapido = computed(() => props.modoCadastro === true)
 
 const form = ref({
   placa: '',
@@ -315,6 +332,10 @@ const formValido = computed(() => {
     )
   }
 
+  if (isCadastroRapido.value) {
+    return veiculoValido && form.value.nomeMotorista.trim().length > 0
+  }
+
   return veiculoValido
 })
 
@@ -341,6 +362,7 @@ const handleCadastro = () => {
     ...form.value,
     isAgendamento: isAgendamento.value,
     isModoPortaria: isModoPortaria.value,
+    isCadastroRapido: isCadastroRapido.value,
   })
   fecharModal()
 }

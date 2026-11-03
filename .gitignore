@@ -137,3 +137,6 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Local layer test helper (may contain local credentials/tokens)
+/scripts/configurar-layer-local.sh

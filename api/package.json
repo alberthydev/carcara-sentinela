@@ -8,6 +8,7 @@
     "docs:api": "npm run dev",
     "type-check": "tsc --noEmit",
     "build": "tsc -p tsconfig.json",
+    "test": "tsx --test tests/**/*.test.ts",
     "start": "node dist/server.js"
   },
   "dependencies": {
@@ -29,7 +30,9 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.19.42",
     "@types/swagger-ui-express": "^4.1.8",
+    "@types/supertest": "^6.0.3",
     "@types/yamljs": "^0.2.34",
+    "supertest": "^7.1.4",
     "tsx": "^4.7.2",
     "typescript": "^5.4.5"
   }

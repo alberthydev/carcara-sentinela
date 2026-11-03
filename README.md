@@ -83,6 +83,21 @@ flowchart TD
     style F fill:#FFFDA1,stroke:#FFFD00
 ```
 
+## Camadas de recursos
+
+Cada instituição possui uma camada configurada pela API:
+
+- **Layer 1**: mantém o fluxo atual de câmeras LPR e os endpoints de stream/evento.
+- **Layer 2**: representa instituições sem LPR. Os recursos exclusivos de LPR são bloqueados e a futura aquisição por visão computacional será habilitada nesta camada.
+
+A camada é persistida em `Configuracao.camada` e pode ser alterada pelo endpoint autenticado de configuração. A ausência do campo em instalações existentes mantém o comportamento compatível com a Layer 1.
+
+## Estratégia de testes e visão computacional
+
+O primeiro ciclo prioriza testes de contrato HTTP/caixa-preta para liberação de recursos por camada, além de type-check e build da API. A UI fica para uma etapa posterior, depois que os contratos de backend estiverem estabilizados.
+
+Para a Layer 2, FFmpeg é adequado para captura/decodificação e OpenCV para seleção de frames, correção de perspectiva e melhoria da imagem. O Tesseract pode ser usado como OCR após essa etapa, mas não é um detector de placas por si só e tende a exigir calibração por câmera. A implementação deve ficar isolada em um worker de processamento, enviar eventos normalizados para a API e incluir confiança, frame de origem e revisão humana; antes da adoção, deve ser comparada com um detector especializado de placas (por exemplo, YOLO + OCR) em amostras reais do campus.
+
 ## Fluxo de Acesso Veicular
 
 ```mermaid

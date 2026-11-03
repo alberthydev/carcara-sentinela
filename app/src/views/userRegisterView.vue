@@ -1,12 +1,12 @@
 <template>
-  <div class="min-h-screen w-full bg-[#fafafa] flex flex-col lg:flex-row font-sans antialiased text-carcara-marrom">
+  <div class="auth-page min-h-screen w-full bg-[#fafafa] flex flex-col lg:flex-row font-sans antialiased text-carcara-marrom">
     
     <div
-      class="w-full lg:w-1/2 min-h-[50vh] lg:min-h-screen flex flex-col justify-between items-center px-6 sm:px-12 lg:px-20 py-8 lg:py-12 bg-white relative"
+      class="auth-light-panel w-full lg:w-1/2 min-h-[50vh] lg:min-h-screen flex flex-col justify-between items-center px-6 sm:px-12 lg:px-20 py-8 lg:py-12 bg-white relative"
     >
       <a
         href="#"
-        @click.prevent="router.push('/login')"
+        @click.prevent="goToLogin"
         class="absolute top-4 left-4 lg:top-6 lg:left-6 flex items-center gap-2 text-xs lg:text-sm font-semibold text-gray-500 hover:text-carcara-laranja transition-colors group z-10"
       >
         <svg class="h-4 w-4 lg:h-5 lg:w-5 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -16,15 +16,11 @@
       </a>
 
       <div class="w-full flex flex-col items-center gap-2 text-center relative mt-8 lg:mt-0">
-        <button
-          type="button"
-          @click="mockarDadosIFC"
-          class="absolute top-0 right-0 bg-gray-500 text-white text-[10px] uppercase font-bold px-3 py-1.5 rounded hover:bg-gray-600 cursor-pointer hidden lg:block"
-        >
-          Mock Admin
-        </button>
-
-        <img src="../assets/img/carcara.png" alt="Logo Carcará Sentinela" class="h-24 w-24 lg:h-35 lg:w-35 object-contain" />
+        <img
+          src="../assets/img/carcara.png"
+          alt="Logo Carcará Sentinela"
+          class="auth-logo h-[140px] w-[140px] shrink-0 object-contain"
+        />
         <h1 class="text-4xl lg:text-6xl font-serif tracking-wide text-carcara-marrom">
           Carcará <span class="text-carcara-laranja font-medium">Sentinela</span>
         </h1>
@@ -36,8 +32,8 @@
 
       <div class="w-full max-w-md my-auto flex flex-col gap-5 lg:gap-6 text-left py-8">
         <div>
-          <h2 class="text-3xl lg:text-4xl font-serif font-bold text-carcara-marrom mb-1">Cadastro</h2>
-          <p class="text-base lg:text-xl font-light text-carcara-marrom leading-relaxed">
+          <h2 class="auth-heading text-3xl lg:text-4xl font-serif font-bold text-carcara-marrom mb-1">Cadastro</h2>
+          <p class="auth-subtitle text-base lg:text-xl font-light text-carcara-marrom leading-relaxed">
             Escolha seu perfil e faça a validação para liberar os dados do formulário.
           </p>
         </div>
@@ -65,7 +61,7 @@
               type="text"
               @input="aplicarMascaraCpf"
               placeholder="123.456.789-00"
-              class="w-full bg-[#F9F9F9] border border-gray-200 rounded-lg py-3 px-4 text-sm lg:text-base outline-none focus:border-carcara-laranja disabled:bg-gray-100 disabled:cursor-not-allowed"
+              class="auth-cpf w-full bg-[#F9F9F9] border border-gray-200 rounded-lg py-3 px-4 text-sm lg:text-base outline-none focus:border-carcara-laranja disabled:bg-gray-100 disabled:cursor-not-allowed"
               :disabled="validadoNoIFC"
             />
           </div>
@@ -119,17 +115,17 @@
     </div>
 
     <div
-      class="w-full lg:w-1/2 min-h-[50vh] lg:min-h-screen bg-carcara-laranja-bg flex flex-col justify-center items-center px-6 sm:px-12 lg:px-24 py-12 text-white"
+      class="auth-orange-panel w-full lg:w-1/2 min-h-[50vh] lg:min-h-screen bg-carcara-laranja-bg flex flex-col justify-center items-center px-6 sm:px-12 lg:px-24 py-12 text-white"
     >
       <div
-        class="w-full max-w-lg flex flex-col items-center transition-all duration-300"
-        :class="{'opacity-30 pointer-events-none select-none': form.tipo !== 'visitante' && !validadoNoIFC}"
+        class="auth-content w-full max-w-lg flex flex-col items-center"
       >
         <div class="w-full flex flex-col gap-3 mb-6">
           <button
             type="button"
             @click="loginComGoogle"
-            class="w-full flex items-center justify-center gap-3 bg-white text-carcara-marrom py-3 px-4 rounded-lg text-xs lg:text-sm font-medium hover:bg-gray-50 transition-colors cursor-pointer"
+            :disabled="form.tipo !== 'visitante' && !validadoNoIFC"
+            class="auth-google w-full flex items-center justify-center gap-3 bg-white text-carcara-marrom py-3 px-4 rounded-lg text-xs lg:text-sm font-medium hover:bg-gray-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
             <svg class="h-4 w-4 lg:h-5 lg:w-5" viewBox="0 0 24 24">
                <path fill="#EA4335" d="M12 5.04c1.65 0 3.13.57 4.3 1.69l3.22-3.22C17.56 1.62 14.98 1 12 1 7.35 1 3.39 3.65 1.5 7.5l3.6 2.8C6.01 7.05 8.78 5.04 12 5.04z"/>
@@ -141,7 +137,7 @@
           </button>
         </div>
 
-        <div class="w-full flex items-center gap-4 mb-6">
+        <div class="auth-divider w-full flex items-center gap-4 mb-6">
           <div class="h-[1px] flex-grow bg-white/30"></div>
           <span class="text-[10px] lg:text-xs text-white/60 uppercase tracking-widest font-medium">ou</span>
           <div class="h-[1px] flex-grow bg-white/30"></div>
@@ -155,8 +151,8 @@
                 v-model="form.nome"
                 type="text"
                 placeholder="Ana"
-                class="w-full bg-white rounded-lg py-2.5 px-4 text-sm lg:text-base outline-none disabled:bg-white/80 disabled:opacity-80 disabled:cursor-not-allowed"
-                :disabled="validadoNoIFC"
+                class="w-full bg-white rounded-lg py-2.5 px-4 text-sm lg:text-base outline-none disabled:bg-white disabled:cursor-not-allowed"
+                :disabled="(form.tipo !== 'visitante' && !validadoNoIFC) || validadoNoIFC"
                 required
               />
             </div>
@@ -166,8 +162,8 @@
                 v-model="form.sobrenome"
                 type="text"
                 placeholder="Silva"
-                class="w-full bg-white rounded-lg py-2.5 px-4 text-sm lg:text-base outline-none disabled:bg-white/80 disabled:opacity-80 disabled:cursor-not-allowed"
-                :disabled="validadoNoIFC"
+                class="w-full bg-white rounded-lg py-2.5 px-4 text-sm lg:text-base outline-none disabled:bg-white disabled:cursor-not-allowed"
+                :disabled="(form.tipo !== 'visitante' && !validadoNoIFC) || validadoNoIFC"
                 required
               />
             </div>
@@ -179,7 +175,8 @@
               v-model="form.senha"
               type="password"
               placeholder="••••••••"
-              class="w-full bg-white rounded-lg py-2.5 px-4 text-sm lg:text-base outline-none transition-all duration-200 focus:ring-2 focus:ring-white/50"
+              class="auth-password w-full bg-white rounded-lg py-2.5 px-4 text-sm lg:text-base outline-none disabled:bg-white disabled:cursor-not-allowed transition-all duration-200 focus:ring-2 focus:ring-white/50"
+              :disabled="form.tipo !== 'visitante' && !validadoNoIFC"
               @focus="senhaFocada = true"
               @blur="senhaFocada = false"
               required
@@ -195,21 +192,26 @@
             </div>
           </div>
 
-          <label class="flex items-start gap-2 text-xs lg:text-sm text-carcara-marrom font-medium mt-1 cursor-pointer select-none text-left leading-tight">
-            <input type="checkbox" class="mt-0.5 rounded border-gray-300 accent-carcara-marrom h-3 w-3 lg:h-4 lg:w-4 shrink-0" required />
+          <label class="auth-consent flex items-start gap-2 text-xs lg:text-sm text-carcara-marrom font-medium mt-1 cursor-pointer select-none text-left leading-tight">
+            <input
+              type="checkbox"
+              class="mt-0.5 rounded border-gray-300 accent-carcara-marrom h-3 w-3 lg:h-4 lg:w-4 shrink-0"
+              :disabled="form.tipo !== 'visitante' && !validadoNoIFC"
+              required
+            />
             <span>Concordo com os <a href="#" class="underline">Termos de Serviço</a> e <a href="#" class="underline">Políticas de Privacidade</a>.</span>
           </label>
 
           <button
             type="submit"
-            :disabled="carregando"
-            class="w-full bg-carcara-marrom text-white font-semibold py-3 lg:py-3.5 px-4 rounded-lg mt-2 shadow-md hover:opacity-95 disabled:bg-carcara-marrom/50 disabled:cursor-not-allowed transition-all cursor-pointer text-center text-sm lg:text-base"
+            :disabled="carregando || (form.tipo !== 'visitante' && !validadoNoIFC)"
+            class="auth-primary w-full bg-carcara-marrom text-white font-semibold py-3 lg:py-3.5 px-4 rounded-lg mt-2 shadow-md hover:opacity-95 disabled:bg-carcara-marrom/50 disabled:cursor-not-allowed transition-all cursor-pointer text-center text-sm lg:text-base"
           >
             {{ carregando ? 'Enviando...' : 'Concluir Cadastro' }}
           </button>
         </form>
 
-        <p class="text-xs lg:text-sm text-carcara-marrom mt-6 font-medium pb-8 lg:pb-0">
+        <p class="auth-switch text-xs lg:text-sm text-carcara-marrom mt-6 font-medium pb-8 lg:pb-0">
           Já tem uma conta?
           <a href="#" @click.prevent="goToLogin" class="text-white hover:underline font-bold">Iniciar sessão.</a>
         </p>
@@ -221,6 +223,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { runViewTransition } from '@/utils/viewTransition'
 
 const router = useRouter()
 
@@ -251,31 +254,6 @@ watch(
     form.value.cpf = ''
   },
 )
-
-const mockarDadosIFC = async () => {
-  const nome = prompt('Nome do Aluno:')
-  const cpf = prompt('CPF do Aluno (Digite com a pontuação: 000.000.000-00):')
-  const matricula = prompt('Matrícula do Aluno:')
-
-  if (nome && cpf && matricula) {
-    try {
-      const response = await fetch('/api/users/admin/mock-estudante', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome, cpf, matricula }),
-      })
-
-      if (response.ok) {
-        alert("Dados integrados ao 'Sistema IFC' com sucesso!")
-      } else {
-        const erroData = await response.json().catch(() => ({}))
-        alert(`Falha ao criar Mock: ${erroData.erro || response.statusText}. Você tem permissão de Admin?`)
-      }
-    } catch (error) {
-      alert(`Erro de conexão ao tentar salvar o Mock. ${error}`)
-    }
-  }
-}
 
 const validarComIFC = async () => {
   if (!form.value.cpf || !form.value.matricula) {
@@ -357,7 +335,7 @@ const realizarCadastro = async () => {
           senha: '',
           fotoUrl: '',
         }
-        router.push('/login')
+        runViewTransition(() => router.push('/login'))
       }, 3000)
     } else {
       mensagem.value = dados.erro || 'Erro ao cadastrar.'
@@ -413,7 +391,7 @@ const handleCredentialResponse = async (response: GoogleAuthResponse) => {
       }
 
       setTimeout(() => {
-        router.push('/login')
+        runViewTransition(() => router.push('/login'))
       }, 2000)
     } else {
       mensagem.value = dados.erro || 'Erro ao processar login com Google.'
@@ -497,7 +475,7 @@ const aplicarMascaraCpf = (event: Event) => {
   form.value.cpf = valor
 }
 const goToLogin = () => {
-  router.push('/login')
+  runViewTransition(() => router.push('/login'))
 }
 
 </script>

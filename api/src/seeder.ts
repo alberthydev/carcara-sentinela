@@ -4,14 +4,13 @@ import Escala from './models/Escala';
 
 export const seedDatabase = async () => {
   try {
-    await User.deleteMany({});
-    await Escala.deleteMany({});
-
     const devExists = await User.findOne({ cpf: '000.000.000-00' });
     
     console.log('Existo');
 
     if (!devExists) {
+      await User.deleteMany({});
+      await Escala.deleteMany({});
       console.log('Populando o banco de dados com usuários e escalas iniciais...');
       const salt = await bcrypt.genSalt(10);
 

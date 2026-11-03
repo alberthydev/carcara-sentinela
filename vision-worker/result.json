@@ -1,0 +1,74 @@
+{
+  "video": "/home/albert/Downloads/Photos-1-001/20261101_174609.mp4",
+  "frames_processados": 149,
+  "roi": null,
+  "deteccoes": [
+    {
+      "placa": "QJF8373",
+      "frame": 5,
+      "segundo": 0.167,
+      "confianca": 0.5,
+      "caixa": {
+        "x": 339,
+        "y": 680,
+        "largura": 101,
+        "altura": 36
+      }
+    },
+    {
+      "placa": "QJF5373",
+      "frame": 65,
+      "segundo": 2.166,
+      "confianca": 0.5,
+      "caixa": {
+        "x": 376,
+        "y": 854,
+        "largura": 170,
+        "altura": 76
+      }
+    },
+    {
+      "placa": "QJF5373",
+      "frame": 70,
+      "segundo": 2.333,
+      "confianca": 0.5,
+      "caixa": {
+        "x": 348,
+        "y": 871,
+        "largura": 180,
+        "altura": 80
+      }
+    },
+    {
+      "placa": "AIF5373",
+      "frame": 75,
+      "segundo": 2.5,
+      "confianca": 0.5,
+      "caixa": {
+        "x": 342,
+        "y": 882,
+        "largura": 187,
+        "altura": 71
+      }
+    }
+  ],
+  "placa_recomendada": "QJF5373",
+  "confianca_recomendada": 0.5,
+  "liberacao_automatica": false,
+  "empate": false,
+  "motivo_bloqueio": "menos de 3 leituras iguais; confiança abaixo de 0.75",
+  "placas_mais_frequentes": [
+    {
+      "placa": "QJF5373",
+      "leituras": 2
+    },
+    {
+      "placa": "QJF8373",
+      "leituras": 1
+    },
+    {
+      "placa": "AIF5373",
+      "leituras": 1
+    }
+  ]
+}

@@ -146,6 +146,24 @@
             </div>
           </div>
 
+          <div v-if="isDevMode" class="border-t border-white/20 pt-2 mb-2">
+            <div class="px-2 mb-2 text-xs font-bold text-orange-200">
+              Camada da instituição: {{ camadaInstituicao }}
+            </div>
+            <div class="flex gap-2">
+              <button
+                v-for="camada in [1, 2]"
+                :key="camada"
+                @click="alterarCamada(camada)"
+                :disabled="camadaInstituicao === camada || alterandoCamada"
+                class="flex-1 rounded-lg px-2 py-2 text-xs font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                :class="camadaInstituicao === camada ? 'bg-white/25' : 'bg-white/10 hover:bg-white/20'"
+              >
+                Layer {{ camada }}
+              </button>
+            </div>
+          </div>
+
           <button
             @click="handleLogout"
             class="w-full text-left py-2 px-2 hover:bg-red-600 rounded-lg text-sm transition-colors cursor-pointer font-semibold flex items-center justify-between"
@@ -177,6 +195,8 @@
         :usuario-id="usuarioLogado?.id"
         :total-vagas="totalVagasGlobal"
         :vagas-ocupadas="vagasOcupadas"
+        :camada="camadaInstituicao ?? 1"
+        :vision-result="resultadoVisao"
         @abrir-cadastro="abrirCadastroNormal"
         @abrir-cadastro-rapido="abrirCadastroRapido"
         @abrir-edicao="abrirEdicao"
@@ -365,10 +385,37 @@
       </aside>
     </main>
 
+    <div v-if="isDevMode" class="fixed bottom-6 right-6 z-40">
+      <button
+        class="rounded-full bg-[#D17836] px-4 py-3 text-sm font-bold text-white shadow-xl"
+        @click="painelDevAberto = !painelDevAberto"
+      >
+        Ferramentas Dev
+      </button>
+      <div
+        v-if="painelDevAberto"
+        class="absolute bottom-14 right-0 w-80 rounded-2xl bg-white p-5 text-left shadow-2xl border border-[#FDEEE8]"
+      >
+        <h3 class="font-bold text-[#1E0D01]">Demonstração de câmera</h3>
+        <p class="mt-1 text-xs text-gray-500">
+          Layer 2 usa o resultado do worker, sem abrir o stream LPR.
+        </p>
+        <label class="mt-4 block text-xs font-bold">Demonstração</label>
+        <input
+          class="mt-1 w-full text-xs"
+          type="file"
+          accept="video/*,.json,application/json"
+          @change="processarDemonstracao"
+        />
+        <p v-if="mensagemDev" class="mt-3 text-xs text-[#FD7917]">{{ mensagemDev }}</p>
+      </div>
+    </div>
+
     <ModalCadastrarVeiculo
       :is-open="isModalVeiculoAberto"
       :tipo-usuario-visualizando="tipoUsuario"
       :dados-iniciais="dadosCamera"
+      :modo-cadastro="dadosCamera?.modoCadastro === true"
       @close="fecharModalVeiculo"
       @save="receberNovoVeiculo"
     />
@@ -410,6 +457,12 @@ const usuarioLogado = ref<any>(null)
 const tipoUsuario = ref<string>('visitante')
 
 const isDevMode = computed(() => usuarioLogado.value?.tipo === 'dev')
+const camadaInstituicao = ref<number | null>(null)
+const alterandoCamada = ref(false)
+const painelDevAberto = ref(false)
+const resultadoVisao = ref<any>(null)
+const mensagemDev = ref('')
+const visionWorkerUrl = import.meta.env.VITE_VISION_WORKER_URL || 'http://localhost:8000'
 
 const isModalVeiculoAberto = ref(false)
 const isModalPerfilAberto = ref(false)
@@ -426,6 +479,7 @@ const dadosCamera = ref<{
   marca: string
   modelo: string
   cor: string
+  modoCadastro?: boolean
   dataVisita?: string
   horaVisita?: string
 } | null>(null)
@@ -449,6 +503,7 @@ const buscarConfiguracao = async () => {
     const res = await fetchApi('/api/users/configuracao')
     const data = await res.json()
     if (data && data.totalVagas) totalVagasGlobal.value = data.totalVagas
+    if (data && (data.camada === 1 || data.camada === 2)) camadaInstituicao.value = data.camada
   } catch (e) {
     console.error('Erro banco vagas', e)
   }
@@ -525,6 +580,78 @@ const salvarConfigCampus = async (novasVagas: number) => {
     isModalConfigCampusAberto.value = false
   } catch (e) {
     console.error(e)
+  }
+}
+
+const alterarCamada = async (camada: number) => {
+  if (!isDevMode.value || camada === camadaInstituicao.value || alterandoCamada.value) return
+  alterandoCamada.value = true
+  try {
+    const res = await fetchApi('/api/users/configuracao/camada', {
+      method: 'PUT',
+      body: JSON.stringify({ camada }),
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      alert(data.erro || 'Não foi possível alterar a camada.')
+      return
+    }
+    camadaInstituicao.value = data.camada
+    tipoUsuario.value = 'seguranca'
+  } catch (error) {
+    console.error('Erro ao alterar camada:', error)
+    alert('Falha de comunicação com a API.')
+  } finally {
+    alterandoCamada.value = false
+  }
+}
+
+const enviarResultadoVisao = async (resultado: any) => {
+  resultadoVisao.value = resultado
+  const respostaApi = await fetchApi('/api/users/visao/evento', {
+    method: 'POST',
+    body: JSON.stringify(resultado),
+  })
+  const retorno = await respostaApi.json()
+  resultadoVisao.value = { ...resultado, ...retorno }
+  mensagemDev.value = respostaApi.ok
+    ? `Resultado recebido: ${retorno.status || 'processado'}.`
+    : retorno.erro || 'A API rejeitou o resultado do worker.'
+}
+
+const processarDemonstracao = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const arquivo = input.files?.[0]
+  if (!arquivo) return
+  mensagemDev.value = arquivo.name.toLowerCase().endsWith('.json')
+    ? 'Carregando resultado...'
+    : 'Processando vídeo...'
+  try {
+    if (arquivo.name.toLowerCase().endsWith('.json')) {
+      const resultado = JSON.parse(await arquivo.text())
+      await enviarResultadoVisao(resultado)
+      return
+    }
+
+    const respostaWorker = await fetch(`${visionWorkerUrl}/process`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'X-Video-Name': arquivo.name,
+      },
+      body: arquivo,
+    })
+    const resultado = await respostaWorker.json()
+    if (!respostaWorker.ok) {
+      mensagemDev.value = resultado.erro || 'O vision-worker rejeitou o vídeo.'
+      return
+    }
+    await enviarResultadoVisao(resultado)
+  } catch (error) {
+    console.error('Erro ao processar ou enviar vídeo:', error)
+    resultadoVisao.value = null
+    mensagemDev.value =
+      'Não foi possível conectar ao vision-worker ou à API. Verifique se os serviços estão ativos.'
   }
 }
 
@@ -639,6 +766,45 @@ const receberNovoVeiculo = async (dadosFormulario: any) => {
       isModalVeiculoAberto.value = false
       dadosCamera.value = null
 
+      registrarAcesso('manual_reset')
+      return
+    }
+
+    if (dadosFormulario.isCadastroRapido) {
+      const cadastro = await fetchApi('/api/users/admin/cadastro-rapido', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nomeUsuario: dadosFormulario.nomeMotorista,
+          placa: dadosFormulario.placa,
+          marca: dadosFormulario.marca,
+          modelo: dadosFormulario.modelo,
+          cor: dadosFormulario.cor,
+        }),
+      })
+      const cadastroData = await cadastro.json()
+      if (!cadastro.ok) {
+        alert(cadastroData.erro || 'Não foi possível cadastrar o veículo.')
+        return
+      }
+
+      const liberacao = await fetchApi('/api/users/admin/acesso-manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          placa: dadosFormulario.placa,
+          marca: dadosFormulario.marca,
+          modelo: dadosFormulario.modelo,
+          cor: dadosFormulario.cor,
+          nomeMotorista: dadosFormulario.nomeMotorista,
+          tipoMotorista: 'Cadastro rápido',
+          isModoPortaria: true,
+        }),
+      })
+      if (!liberacao.ok) throw new Error('Erro ao registrar liberação')
+      alert('Veículo cadastrado para o usuário e acesso liberado!')
+      isModalVeiculoAberto.value = false
+      dadosCamera.value = null
       registrarAcesso('manual_reset')
       return
     }

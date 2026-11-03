@@ -56,6 +56,8 @@ jobs:
         run: npm ci
       - name: Type check
         run: npm run type-check
+      - name: Test
+        run: npm test
       - name: Detect build script
         id: has_build
         run: |

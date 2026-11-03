@@ -4,13 +4,16 @@ import rateLimit from "express-rate-limit";
 // Controllers
 import { registryUser, loginUser, googleAuth, getAllUsersAdmin, updateUserAdmin, atualizarPerfilProprio } from "../controllers/userController";
 import { lprStream, simularLeituraLPR } from "../controllers/lprController";
-import { getConfiguracao, updateConfiguracao } from "../controllers/configuracaoController";
+import { getConfiguracao, updateConfiguracao, updateCamada } from "../controllers/configuracaoController";
 import { getEscalas, createEscala, updateEscala, getEscalaAtiva } from "../controllers/escalaController";
-import { adicionarVeiculo, getVeiculos, agendarVisita, getVisitasUsuario, getHistoricoAcessos, getTodosAcessos, registroManual, getPlacasParaSimulacao, getVagasOcupadas, inativarVisita, editarVisita, removerVeiculo, editarVeiculo } from "../controllers/veiculoVisitaController";
+import { adicionarVeiculo, getVeiculos, agendarVisita, getVisitasUsuario, getHistoricoAcessos, getTodosAcessos, registroManual, cadastroRapidoPortaria, getPlacasParaSimulacao, getVagasOcupadas, inativarVisita, editarVisita, removerVeiculo, editarVeiculo } from "../controllers/veiculoVisitaController";
 
 // Models e Middlewares
 import { Estudante } from "../models/Estudante";
 import { verificarToken } from "../middleware/authMiddleware";
+import { requerCamadaLpr, requerCamadaVisao } from "../middleware/camadaMiddleware";
+import { receberResultadoVisao } from "../controllers/visaoController";
+import { requerUsuarioDev } from "../middleware/devMiddleware";
 
 const router = Router();
 
@@ -37,20 +40,13 @@ router.get("/validar-ifc/:cpf/:matricula", async (req: Request, res: Response) =
   }
 });
 
-router.post("/admin/mock-estudante", async (req: Request, res: Response) => {
-  const { cpf, matricula, nome } = req.body;
-  try {
-    await Estudante.create({ cpf, matricula, nome });
-    res.status(201).send("OK");
-  } catch (e) { res.status(500).send("Erro ao mockar dados"); }
-});
-
 router.use(verificarToken);
 
 // --- LPR e Câmera ---
-router.get("/stream", lprStream);
-router.post("/evento", simularLeituraLPR);
-router.get("/placas-simulacao", getPlacasParaSimulacao);
+router.post("/visao/evento", requerCamadaVisao, receberResultadoVisao);
+router.get("/stream", requerCamadaLpr, lprStream);
+router.post("/evento", requerCamadaLpr, simularLeituraLPR);
+router.get("/placas-simulacao", requerCamadaLpr, getPlacasParaSimulacao);
 
 // --- Perfil ---
 router.put("/:id/perfil", atualizarPerfilProprio);
@@ -60,11 +56,13 @@ router.get("/admin/acessos", getTodosAcessos);
 router.get("/admin/vagas-ocupadas", getVagasOcupadas);
 router.get("/admin/usuarios", getAllUsersAdmin);
 router.post("/admin/acesso-manual", registroManual);
+router.post("/admin/cadastro-rapido", cadastroRapidoPortaria);
 router.put("/admin/usuarios/:id", updateUserAdmin);
 
 // --- Configurações Gerais ---
 router.get("/configuracao", getConfiguracao);
 router.put("/configuracao", updateConfiguracao);
+router.put("/configuracao/camada", requerUsuarioDev, updateCamada);
 
 // --- Escala ---
 router.get("/escala", getEscalas);

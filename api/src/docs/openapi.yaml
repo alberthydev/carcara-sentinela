@@ -80,6 +80,10 @@ components:
       properties:
         campusId: { type: string }
         totalVagas: { type: integer }
+        camada:
+          type: integer
+          enum: [1, 2]
+          description: '1 para instituições com LPR; 2 para instituições sem LPR'
 
   securitySchemes:
     bearerAuth:
@@ -298,30 +302,6 @@ paths:
                 type: object
                 properties:
                   erro: { type: string }
-
-  /admin/mock-estudante:
-    post:
-      summary: Inserir dados falsos do IFC (Para testes)
-      tags: [Auth]
-      requestBody:
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/Estudante' }
-      responses:
-        '201':
-          description: 'Mock inserido com sucesso'
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: "OK"
-        '500':
-          description: 'Erro ao mockar dados'
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: "Erro ao mockar dados"
 
   # ================= PERFIL PESSOAL =================
   /{id}/perfil:
@@ -550,7 +530,7 @@ paths:
   # ================= CONFIGURAÇÕES E ESCALA =================
   /configuracao:
     get:
-      summary: Buscar configurações (total de vagas)
+      summary: Buscar configurações (vagas e camada da instituição)
       tags: [Configurações]
       security: [{ bearerAuth: [] }]
       responses:
@@ -569,7 +549,7 @@ paths:
                   erro: { type: string }
 
     put:
-      summary: Atualizar total de vagas
+      summary: Atualizar vagas e camada da instituição
       tags: [Configurações]
       security: [{ bearerAuth: [] }]
       requestBody:
@@ -579,6 +559,9 @@ paths:
               type: object
               properties:
                 totalVagas: { type: integer }
+                camada:
+                  type: integer
+                  enum: [1, 2]
       responses:
         '200': 
           description: 'Configurações atualizadas'
@@ -593,6 +576,24 @@ paths:
                 type: object
                 properties:
                   erro: { type: string }
+
+  /configuracao/camada:
+    put:
+      summary: Alterar camada da instituição (desenvolvedor)
+      tags: [Configurações]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [camada]
+              properties:
+                camada: { type: integer, enum: [1, 2] }
+      responses:
+        '200': { description: Camada atualizada }
+        '403': { description: Apenas o usuário desenvolvedor pode alterar a camada }
 
   /escala:
     get:
@@ -801,6 +802,32 @@ paths:
                 type: object
                 properties:
                   erro: { type: string }
+
+  /visao/evento:
+    post:
+      summary: Receber resultado do worker de visão computacional
+      tags: [LPR e Câmera]
+      security: [{ bearerAuth: [] }]
+      description: Disponível somente para instituições Layer 2.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [placa_recomendada, confianca_recomendada, liberacao_automatica]
+              properties:
+                placa_recomendada: { type: string }
+                confianca_recomendada: { type: number, minimum: 0, maximum: 1 }
+                liberacao_automatica: { type: boolean }
+                deteccoes: { type: array, items: { type: object } }
+      responses:
+        '200':
+          description: Resultado recebido, revisado ou registrado
+        '400':
+          description: Resultado inválido
+        '403':
+          description: Instituição não está na Layer 2
   
   # ================= VEÍCULOS =================
   /{id}/veiculos:

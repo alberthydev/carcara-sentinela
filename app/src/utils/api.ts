@@ -11,7 +11,7 @@ export const fetchApi = async (url: string, options: RequestInit = {}) => {
 
   const response = await fetch(url, { ...options, headers });
 
-  if (response.status === 401 || response.status === 403) {
+  if (response.status === 401) {
     alert("Sua sessão é inválida ou expirou. Faça login novamente.");
     localStorage.removeItem('token');
     localStorage.removeItem('user');

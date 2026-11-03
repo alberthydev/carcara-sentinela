@@ -1,7 +1,7 @@
 <template>
-  <div class="min-h-screen w-full bg-white flex font-sans antialiased">
+  <div class="auth-page min-h-screen w-full bg-[#fafafa] flex flex-col lg:flex-row font-sans antialiased">
     <div
-      class="w-full lg:w-1/2 min-h-screen flex flex-col justify-center items-center px-8 sm:px-16 lg:px-24 py-12 bg-white text-carcara-marrom"
+      class="auth-light-panel w-full lg:w-1/2 min-h-[42vh] lg:min-h-screen flex flex-col justify-center items-center px-8 sm:px-16 lg:px-24 py-10 lg:py-12 bg-white text-carcara-marrom relative"
     >
       <div class="w-full max-w-md flex flex-col items-center">
         <a
@@ -28,7 +28,7 @@
           <img
             src="../assets/img/carcara.png"
             alt="Logo Carcará Sentinela"
-            class="h-35 w-35 object-contain"
+            class="auth-logo h-[140px] w-[140px] shrink-0 object-contain"
           />
           <h1 class="text-5xl font-serif tracking-wide text-carcara-marrom">
             Carcará <span class="text-carcara-laranja font-medium">Sentinela</span>
@@ -38,17 +38,23 @@
           </p>
           <div class="h-[2px] w-35 bg-carcara-laranja my-8"></div>
         </div>
+      </div>
+    </div>
 
+    <div
+      class="auth-orange-panel w-full lg:w-1/2 min-h-[58vh] lg:min-h-screen bg-carcara-laranja-bg flex flex-col justify-center items-center px-8 sm:px-16 lg:px-24 py-12 text-white"
+    >
+      <div class="auth-content w-full max-w-md flex flex-col items-center">
         <div class="w-full text-left mb-6">
-          <h2 class="text-3xl font-serif font-normal text-carcara-marrom mb-1">Bem-vindo</h2>
-          <p class="text-sm font-light text-gray-500">Acesse sua conta para continuar</p>
+          <h2 class="auth-heading text-3xl font-serif font-bold text-carcara-marrom mb-1">Bem-vindo</h2>
+          <p class="auth-subtitle text-sm font-light text-carcara-marrom">Acesse sua conta para continuar</p>
         </div>
 
         <div class="w-full flex flex-col gap-3 mb-6">
           <button
             type="button"
             @click="loginComGoogle"
-            class="w-full flex items-center justify-center gap-3 border border-gray-200 py-3 px-4 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors cursor-pointer"
+            class="auth-google w-full flex items-center justify-center gap-3 bg-white text-carcara-marrom py-3 px-4 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors cursor-pointer"
           >
             <svg class="h-5 w-5" viewBox="0 0 24 24">
               <path
@@ -84,14 +90,14 @@
           {{ mensagem }}
         </div>
 
-        <div class="w-full flex items-center gap-4 mb-6">
-          <div class="h-[1px] flex-grow bg-gray-200"></div>
-          <span class="text-xs text-gray-400 uppercase tracking-widest font-medium">ou</span>
-          <div class="h-[1px] flex-grow bg-gray-200"></div>
+        <div class="auth-divider w-full flex items-center gap-4 mb-6">
+          <div class="h-[1px] flex-grow bg-white/30"></div>
+          <span class="text-xs text-white/60 uppercase tracking-widest font-medium">ou</span>
+          <div class="h-[1px] flex-grow bg-white/30"></div>
         </div>
 
         <form @submit.prevent="handleLogin" class="w-full flex flex-col gap-4">
-          <div class="flex flex-col items-start gap-1">
+          <div class="auth-cpf flex flex-col items-start gap-1">
             <label for="cpf" class="text-sm font-semibold text-carcara-marrom">CPF</label>
             <input
               id="cpf"
@@ -99,24 +105,24 @@
               type="text"
               @input="aplicarMascaraCpf"
               placeholder="111.222.333-44"
-              class="w-full bg-[#F9F9F9] border border-gray-200 rounded-lg py-3 px-4 text-base outline-none focus:border-carcara-laranja focus:bg-white transition-all"
+              class="w-full bg-white text-carcara-marrom placeholder:text-gray-400 rounded-lg py-3 px-4 text-base outline-none focus:ring-2 focus:ring-white/50 transition-all"
               required
             />
           </div>
 
-          <div class="flex flex-col items-start gap-1">
+          <div class="auth-password flex flex-col items-start gap-1">
             <label for="password" class="text-sm font-semibold text-carcara-marrom">Senha</label>
             <input
               id="password"
               v-model="loginForm.password"
               type="password"
               placeholder="••••••••"
-              class="w-full bg-[#F9F9F9] border border-gray-200 rounded-lg py-3 px-4 text-base outline-none focus:border-carcara-laranja focus:bg-white transition-all"
+              class="w-full bg-white text-carcara-marrom placeholder:text-gray-400 rounded-lg py-3 px-4 text-base outline-none focus:ring-2 focus:ring-white/50 transition-all"
               required
             />
           </div>
 
-          <div class="w-full flex justify-between items-center text-sm mt-1">
+          <div class="auth-consent w-full flex justify-between items-center text-sm mt-1">
             <label
               class="flex items-center gap-2 text-carcara-marrom font-medium cursor-pointer select-none"
             >
@@ -130,7 +136,7 @@
             <a
               href="#"
               @click.prevent="forgotPassword"
-              class="text-carcara-laranja hover:underline font-medium"
+              class="text-white hover:underline font-medium"
             >
               Esqueceu a sua senha?
             </a>
@@ -138,26 +144,24 @@
 
           <button
             type="submit"
-            class="w-full bg-carcara-laranja text-white font-semibold py-3.5 px-4 rounded-lg mt-4 shadow-sm hover:opacity-95 active:scale-[0.99] transition-all cursor-pointer text-center"
+            class="auth-primary w-full bg-carcara-marrom text-white font-semibold py-3.5 px-4 rounded-lg mt-4 shadow-md hover:opacity-95 active:scale-[0.99] transition-all cursor-pointer text-center"
           >
             Entrar
           </button>
         </form>
 
-        <p class="text-sm text-carcara-marrom mt-8 font-medium">
+        <p class="auth-switch text-sm text-carcara-marrom mt-8 font-medium">
           Não tem uma conta?
           <a
             href="#"
             @click.prevent="goToRegistry"
-            class="text-carcara-laranja hover:underline font-bold"
+            class="text-white hover:underline font-bold"
           >
             Cadastre-se
           </a>
         </p>
       </div>
     </div>
-
-    <div class="hidden lg:block lg:w-1/2 min-h-screen bg-carcara-laranja-bg"></div>
 
     <div
       v-if="promptCpfVinculo"
@@ -210,6 +214,7 @@
 <script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { runViewTransition } from '@/utils/viewTransition'
 
 const router = useRouter()
 
@@ -369,7 +374,7 @@ const loginComGoogle = () => {
 }
 
 const goToRegistry = () => {
-  router.push('/register')
+  runViewTransition(() => router.push('/register'))
 }
 
 const forgotPassword = () => {
