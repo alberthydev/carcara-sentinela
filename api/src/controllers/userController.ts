@@ -4,6 +4,8 @@ import jwt from "jsonwebtoken";
 import User from "../models/User";
 import { OAuth2Client } from "google-auth-library";
 import { Estudante } from "../models/Estudante";
+import crypto from "node:crypto";
+import nodemailer from "nodemailer";
 
 const client = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
@@ -106,7 +108,11 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
 
 export const registryUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { cpf, matricula, senha, nome, sobrenome, fotoUrl, carros, tipo } = req.body;
+    const { cpf, matricula, senha, nome, sobrenome, fotoUrl, carros, tipo, email } = req.body;
+    if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      res.status(400).json({ erro: "Informe um e-mail válido." });
+      return;
+    }
 
     const regexSenha = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!regexSenha.test(senha)) {
@@ -120,9 +126,9 @@ export const registryUser = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const hasUser = await User.findOne({ cpf });
+    const hasUser = await User.findOne({ $or: [{ cpf }, { email: email.trim().toLowerCase() }] });
     if (hasUser) {
-      res.status(400).json({ erro: "CPF já cadastrado." });
+      res.status(400).json({ erro: hasUser.cpf === cpf ? "CPF já cadastrado." : "E-mail já cadastrado." });
       return;
     }
 
@@ -130,7 +136,7 @@ export const registryUser = async (req: Request, res: Response): Promise<void> =
     const senhaHash = await bcrypt.hash(senha, salt);
 
     const newUser = new User({
-      cpf, matricula, senha: senhaHash, nome, sobrenome, tipo, fotoUrl, carros: carros || [],
+      cpf, matricula, senha: senhaHash, nome, sobrenome, tipo, email: email.trim().toLowerCase(), fotoUrl, carros: carros || [],
     });
 
     await newUser.save();
@@ -139,6 +145,85 @@ export const registryUser = async (req: Request, res: Response): Promise<void> =
     console.error("ERRO NO CADASTRO DE USUÁRIO:", erro);
     res.status(500).json({ erro: "Erro interno do servidor." });
   }
+};
+
+const criarTransportadorEmail = () => {
+  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD } = process.env;
+  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASSWORD) return null;
+  return nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: Number(SMTP_PORT),
+    secure: process.env.SMTP_SECURE === "true",
+    auth: { user: SMTP_USER, pass: SMTP_PASSWORD },
+  });
+};
+
+export const solicitarRecuperacaoSenha = async (req: Request, res: Response): Promise<void> => {
+  const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  if (!email) {
+    res.status(400).json({ erro: "Informe um e-mail válido." });
+    return;
+  }
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    res.status(404).json({ erro: "Não encontramos uma conta com este e-mail." });
+    return;
+  }
+
+  const transportador = criarTransportadorEmail();
+  if (!transportador) {
+    res.status(503).json({ erro: "O envio de e-mails ainda não está configurado no servidor." });
+    return;
+  }
+
+  const token = crypto.randomBytes(32).toString("hex");
+  user.resetTokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  user.resetTokenExpiresAt = new Date(Date.now() + 30 * 60 * 1000);
+  await user.save();
+
+  const appUrl = process.env.APP_URL || "http://localhost:5173";
+  try {
+    await transportador.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: user.email,
+      subject: "Redefinição de senha - Carcará Sentinela",
+      text: `Acesse ${appUrl}/reset-password?token=${token} para redefinir sua senha. O link expira em 30 minutos.`,
+    });
+  } catch (erro) {
+    user.resetTokenHash = undefined;
+    user.resetTokenExpiresAt = undefined;
+    await user.save();
+    console.error("ERRO AO ENVIAR E-MAIL DE RECUPERAÇÃO:", erro);
+    res.status(502).json({ erro: "Não foi possível enviar o e-mail de recuperação." });
+    return;
+  }
+
+  res.json({ mensagem: "Se o e-mail estiver cadastrado, um link de recuperação foi enviado." });
+};
+
+export const redefinirSenha = async (req: Request, res: Response): Promise<void> => {
+  const { token, password } = req.body;
+  const regexSenha = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  if (typeof token !== "string" || typeof password !== "string" || !regexSenha.test(password)) {
+    res.status(400).json({ erro: "Token ou senha inválidos." });
+    return;
+  }
+
+  const user = await User.findOne({
+    resetTokenHash: crypto.createHash("sha256").update(token).digest("hex"),
+    resetTokenExpiresAt: { $gt: new Date() },
+  });
+  if (!user) {
+    res.status(400).json({ erro: "O link é inválido ou expirou." });
+    return;
+  }
+
+  user.senha = await bcrypt.hash(password, 10);
+  user.resetTokenHash = undefined;
+  user.resetTokenExpiresAt = undefined;
+  await user.save();
+  res.json({ mensagem: "Senha redefinida com sucesso." });
 };
 
 export const usersList = async (req: Request, res: Response): Promise<void> => {

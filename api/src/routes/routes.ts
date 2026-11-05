@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import rateLimit from "express-rate-limit";
 
 // Controllers
-import { registryUser, loginUser, googleAuth, getAllUsersAdmin, updateUserAdmin, atualizarPerfilProprio } from "../controllers/userController";
+import { registryUser, loginUser, googleAuth, getAllUsersAdmin, updateUserAdmin, atualizarPerfilProprio, solicitarRecuperacaoSenha, redefinirSenha } from "../controllers/userController";
 import { lprStream, simularLeituraLPR } from "../controllers/lprController";
 import { getConfiguracao, updateConfiguracao, updateCamada } from "../controllers/configuracaoController";
 import { getEscalas, createEscala, updateEscala, getEscalaAtiva } from "../controllers/escalaController";
@@ -28,6 +28,8 @@ const authLimiter = rateLimit({
 router.post("/login", authLimiter, loginUser);
 router.post("/cadastro", registryUser);
 router.post("/auth/google", authLimiter, googleAuth);
+router.post("/senha/recuperar", authLimiter, solicitarRecuperacaoSenha);
+router.post("/senha/redefinir", authLimiter, redefinirSenha);
 
 router.get("/validar-ifc/:cpf/:matricula", async (req: Request, res: Response) => {
   try {

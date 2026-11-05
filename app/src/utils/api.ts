@@ -1,5 +1,7 @@
+import { clearAuth, getAuthToken } from './authStorage';
+
 export const fetchApi = async (url: string, options: RequestInit = {}) => {
-  const token = localStorage.getItem('token');
+  const token = getAuthToken();
   
   const tokenValido = token && token !== 'undefined' && token !== 'null';
 
@@ -13,8 +15,7 @@ export const fetchApi = async (url: string, options: RequestInit = {}) => {
 
   if (response.status === 401) {
     alert("Sua sessão é inválida ou expirou. Faça login novamente.");
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    clearAuth();
     window.location.href = '/login'; 
   }
 

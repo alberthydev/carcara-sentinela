@@ -170,6 +170,18 @@
           </div>
 
           <div class="flex flex-col items-start gap-1">
+            <label class="text-xs lg:text-sm font-semibold text-carcara-marrom">E-mail</label>
+            <input
+              v-model="form.email"
+              type="email"
+              placeholder="ana@email.com"
+              class="w-full bg-white rounded-lg py-2.5 px-4 text-sm lg:text-base outline-none disabled:bg-white disabled:cursor-not-allowed"
+              :disabled="form.tipo !== 'visitante' && !validadoNoIFC"
+              required
+            />
+          </div>
+
+          <div class="flex flex-col items-start gap-1">
             <label class="text-xs lg:text-sm font-semibold text-carcara-marrom">Senha</label>
             <input
               v-model="form.senha"
@@ -234,6 +246,7 @@ const form = ref({
   sobrenome: '',
   tipo: '',
   senha: '',
+  email: '',
   fotoUrl: '',
 })
 
@@ -310,6 +323,7 @@ const realizarCadastro = async () => {
     sobrenome: form.value.sobrenome,
     tipo: form.value.tipo,
     senha: form.value.senha,
+    email: form.value.email,
     fotoUrl: form.value.fotoUrl || avatarPlaceholder, 
   }
 
@@ -333,6 +347,7 @@ const realizarCadastro = async () => {
           sobrenome: '',
           tipo: '',
           senha: '',
+          email: '',
           fotoUrl: '',
         }
         runViewTransition(() => router.push('/login'))

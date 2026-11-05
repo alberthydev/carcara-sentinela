@@ -13,6 +13,8 @@ export interface IUser extends Document {
   matricula: string;
   senha?: string;
   email?: string;
+  resetTokenHash?: string;
+  resetTokenExpiresAt?: Date;
   nome: string;
   sobrenome: string;
   tipo: "visitante" | "aluno" | "servidor";
@@ -27,6 +29,8 @@ const UserSchema: Schema = new Schema(
     matricula: { type: String, required: false },
     senha: { type: String, required: false },
     email: { type: String, required: false, sparse: true },
+    resetTokenHash: { type: String, required: false },
+    resetTokenExpiresAt: { type: Date, required: false },
     nome: { type: String, required: true },
     sobrenome: { type: String, required: true },
     ativo: { type: Boolean, required: true, default: true },

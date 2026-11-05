@@ -3,6 +3,8 @@ import HomeView from '@/views/HomeView.vue'
 import CadastroVisitanteView from '@/views/userRegisterView.vue'
 import UserLoginView from '@/views/userLoginView.vue'
 import DashboardMain from '../views/DashboardMainView.vue'
+import { getAuthToken } from '@/utils/authStorage'
+import ResetPasswordView from '@/views/ResetPasswordView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -23,6 +25,11 @@ const router = createRouter({
       component: CadastroVisitanteView,
     },
     {
+      path: '/reset-password',
+      name: 'resetPassword',
+      component: ResetPasswordView,
+    },
+    {
       path: '/dashboard',
       name: 'Interno',
       component: DashboardMain,
@@ -32,7 +39,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from) => {
-  const token = localStorage.getItem('token')
+  const token = getAuthToken()
 
   if (to.meta.requiresAuth && !token) {
     return '/login'

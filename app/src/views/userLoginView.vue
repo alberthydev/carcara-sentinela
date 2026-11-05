@@ -185,6 +185,44 @@
           </p>
         </div>
 
+        <div
+          v-if="promptRecuperacao"
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+        >
+          <div class="bg-white w-full max-w-md p-8 rounded-2xl shadow-2xl m-4 relative">
+            <button
+              type="button"
+              @click="promptRecuperacao = false"
+              class="absolute top-4 right-4 text-gray-400 hover:text-carcara-marrom text-xl font-bold"
+            >
+              &times;
+            </button>
+            <h3 class="text-2xl font-serif font-bold text-carcara-marrom mb-2">Recuperar senha</h3>
+            <p class="text-sm text-gray-500 mb-5">
+              Informe o e-mail cadastrado para receber um link de redefinição.
+            </p>
+            <form @submit.prevent="solicitarRecuperacao" class="flex flex-col gap-4">
+              <input
+                v-model="emailRecuperacao"
+                type="email"
+                placeholder="seu@email.com"
+                class="w-full bg-[#F9F9F9] border border-gray-200 rounded-lg py-3 px-4 text-base text-carcara-marrom outline-none focus:border-carcara-laranja"
+                required
+              />
+              <button
+                type="submit"
+                :disabled="carregando"
+                class="w-full bg-carcara-marrom text-white font-semibold py-3 rounded-lg disabled:opacity-50"
+              >
+                {{ carregando ? 'Enviando...' : 'Enviar link' }}
+              </button>
+            </form>
+            <p v-if="mensagemRecuperacao" class="mt-4 text-sm text-carcara-marrom">
+              {{ mensagemRecuperacao }}
+            </p>
+          </div>
+        </div>
+
         <div class="flex flex-col items-start gap-1">
           <label for="cpfVinculo" class="text-sm font-semibold text-carcara-marrom">CPF</label>
           <input
@@ -215,6 +253,7 @@
 import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { runViewTransition } from '@/utils/viewTransition'
+import { saveAuth } from '@/utils/authStorage'
 
 const router = useRouter()
 
@@ -245,6 +284,9 @@ const carregando = ref(false)
 
 const promptCpfVinculo = ref(false)
 const tokenTemporario = ref('')
+const promptRecuperacao = ref(false)
+const emailRecuperacao = ref('')
+const mensagemRecuperacao = ref('')
 
 const handleLogin = async () => {
   carregando.value = true
@@ -265,8 +307,7 @@ const handleLogin = async () => {
     if (resposta.ok) {
       // const tipo = dados.usuario.tipo
 
-      localStorage.setItem('user', JSON.stringify(dados.usuario))
-      localStorage.setItem('token', dados.token)
+      saveAuth(dados.token, dados.usuario, loginForm.rememberMe)
 
       mensagem.value = `Bem-vindo de volta, ${dados.usuario?.nome || 'Usuário'}!`
       tipoAlerta.value = 'sucesso'
@@ -319,8 +360,7 @@ const handleGoogleLoginResponse = async (response: GoogleAuthResponse) => {
 
     if (respostaBackend.ok) {
       // const tipo = dados.usuario?.tipo || 'visitante'
-      localStorage.setItem('user', JSON.stringify(dados.usuario))
-      localStorage.setItem('token', dados.token)
+      saveAuth(dados.token, dados.usuario, loginForm.rememberMe)
 
       mensagem.value = `Bem-vindo de volta, ${dados.usuario?.nome || 'Usuário'}!`
       tipoAlerta.value = 'sucesso'
@@ -378,7 +418,27 @@ const goToRegistry = () => {
 }
 
 const forgotPassword = () => {
-  console.log('Fluxo de recuperação acionado')
+  mensagemRecuperacao.value = ''
+  emailRecuperacao.value = ''
+  promptRecuperacao.value = true
+}
+
+const solicitarRecuperacao = async () => {
+  carregando.value = true
+  mensagemRecuperacao.value = ''
+  try {
+    const resposta = await fetch('/api/users/senha/recuperar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: emailRecuperacao.value }),
+    })
+    const dados = await resposta.json()
+    mensagemRecuperacao.value = dados.mensagem || dados.erro || 'Não foi possível solicitar a recuperação.'
+  } catch {
+    mensagemRecuperacao.value = 'Falha na comunicação com o servidor.'
+  } finally {
+    carregando.value = false
+  }
 }
 
 const concluirVinculoGoogle = async () => {
@@ -404,8 +464,7 @@ const concluirVinculoGoogle = async () => {
 
     if (reply.ok) {
       // const tipo = dados.usuario?.tipo || 'visitante'
-      localStorage.setItem('user', JSON.stringify(dados.usuario))
-      localStorage.setItem('token', dados.token)
+      saveAuth(dados.token, dados.usuario, loginForm.rememberMe)
 
       mensagem.value = `Vínculo realizado com sucesso! Bem-vindo, ${dados.usuario?.nome || 'Usuário'}!`
       tipoAlerta.value = 'sucesso'

@@ -440,6 +440,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { fetchApi } from '../utils/api'
+import { clearAuth, getAuthUser } from '@/utils/authStorage'
 
 import DashVisitante from '../components/DashVisitante.vue'
 import DashAlunoServidor from '../components/DashAlunoServidor.vue'
@@ -552,10 +553,10 @@ const lidarFechamentoEscala = (houveAlteracao: boolean) => {
 }
 
 onMounted(() => {
-  const userStorage = localStorage.getItem('user')
+  const userStorage = getAuthUser()
 
   if (userStorage) {
-    usuarioLogado.value = JSON.parse(userStorage)
+    usuarioLogado.value = userStorage
 
     if (usuarioLogado.value.tipo === 'dev') {
       tipoUsuario.value = 'admin'
@@ -713,7 +714,7 @@ const acaoAdmin = (contexto: string) => {
 }
 
 const handleLogout = () => {
-  localStorage.clear()
+  clearAuth()
   window.location.href = '/'
 }
 
