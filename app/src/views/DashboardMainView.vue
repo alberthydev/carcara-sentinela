@@ -1,17 +1,17 @@
 <template>
   <div class="min-h-screen bg-[#FAFBFC] font-sans text-[#1E0D01]">
     <header
-      class="w-full h-[113px] bg-[#FAFBFC] border-b border-[#FDEEE8] flex items-center justify-between px-[52px] relative z-20"
+      class="w-full min-h-[72px] bg-[#FAFBFC] border-b border-[#FDEEE8] flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-[52px] py-3 relative z-20"
     >
       <div class="flex items-center gap-4">
         <img src="@/assets/img/carcara.png" alt="Logo" class="w-[38px] h-[50px] object-contain" />
-        <h1 class="font-serif text-[29px] text-[#1E0D01]">
+        <h1 class="hidden sm:block font-serif text-[22px] lg:text-[29px] text-[#1E0D01]">
           Carcará <span class="text-[#F79347]">Sentinela</span>
         </h1>
       </div>
 
       <div
-        class="absolute left-1/2 transform -translate-x-1/2 flex items-center justify-center w-[423px] h-[40px] bg-[#FDEEE8] border border-[#F79347] rounded-full"
+        class="hidden md:flex absolute left-1/2 transform -translate-x-1/2 items-center justify-center w-[min(42vw,423px)] h-[40px] bg-[#FDEEE8] border border-[#F79347] rounded-full"
       >
         <span class="text-[#1E0D01] text-base font-medium">{{ textoPainel }}</span>
       </div>
@@ -187,7 +187,7 @@
     </header>
 
     <main
-      class="w-[92%] max-w-[1600px] mx-auto py-10 flex justify-between items-stretch animate-fadeIn"
+      class="w-[calc(100%-2rem)] max-w-[1600px] mx-auto py-6 lg:py-10 flex flex-col lg:flex-row gap-6 justify-between items-stretch animate-fadeIn"
     >
       <component
         :is="componenteFilho"
@@ -205,7 +205,7 @@
 
       <aside
         :class="[
-          'w-[26%] shrink-0 flex flex-col gap-6',
+          'w-full lg:w-[26%] shrink-0 flex flex-col gap-6',
           tipoUsuario === 'admin' ? 'mt-0' : 'mt-[46px]',
         ]"
       >
@@ -385,7 +385,7 @@
       </aside>
     </main>
 
-    <div v-if="isDevMode" class="fixed bottom-6 right-6 z-40">
+    <div v-if="isDevMode" class="fixed bottom-4 right-4 z-40 max-w-[calc(100vw-2rem)]">
       <button
         class="rounded-full bg-[#D17836] px-4 py-3 text-sm font-bold text-white shadow-xl"
         @click="painelDevAberto = !painelDevAberto"
@@ -394,20 +394,91 @@
       </button>
       <div
         v-if="painelDevAberto"
-        class="absolute bottom-14 right-0 w-80 rounded-2xl bg-white p-5 text-left shadow-2xl border border-[#FDEEE8]"
+        class="absolute bottom-14 right-0 w-[min(20rem,calc(100vw-2rem))] rounded-2xl bg-white p-5 text-left shadow-2xl border border-[#FDEEE8]"
       >
         <h3 class="font-bold text-[#1E0D01]">Demonstração de câmera</h3>
-        <p class="mt-1 text-xs text-gray-500">
-          Layer 2 usa o resultado do worker, sem abrir o stream LPR.
+        <p class="mt-1 text-[11px] text-gray-400">
+          Build {{ appVersion }}
         </p>
-        <label class="mt-4 block text-xs font-bold">Demonstração</label>
-        <input
-          class="mt-1 w-full text-xs"
-          type="file"
-          accept="video/*,.json,application/json"
-          @change="processarDemonstracao"
-        />
-        <p v-if="mensagemDev" class="mt-3 text-xs text-[#FD7917]">{{ mensagemDev }}</p>
+        <p class="mt-1 text-xs text-gray-500">
+          {{ camadaInstituicao === 2
+            ? 'Layer 2 usa o resultado do worker, sem abrir o stream LPR.'
+            : 'Layer 1 usa o robô para gerar leituras LPR.' }}
+        </p>
+        <div v-if="camadaInstituicao === 1" class="mt-4 border-t border-[#FDEEE8] pt-4">
+          <label class="block text-xs font-bold text-[#1E0D01]">Robô de placas - Layer 1</label>
+          <button
+            type="button"
+            class="mt-2 w-full rounded-lg px-3 py-2 text-xs font-bold text-white transition-colors"
+            :class="roboLayer1Ativo ? 'bg-red-500 hover:bg-red-600' : 'bg-green-600 hover:bg-green-700'"
+            @click="alternarRoboLayer1"
+          >
+            {{ roboLayer1Ativo ? 'Pausar robô' : 'Iniciar robô' }}
+          </button>
+          <p class="mt-1 text-[11px] text-gray-500">
+            {{ roboLayer1Ativo ? 'Gerando leituras a cada 10 segundos.' : 'Robô pausado.' }}
+          </p>
+        </div>
+        <template v-if="camadaInstituicao === 2">
+          <div class="mt-4 border-t border-[#FDEEE8] pt-4">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-bold text-[#1E0D01]">Câmera RTSP ao vivo</label>
+              <span
+                class="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                :class="rtspEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'"
+              >
+                {{ rtspEnabled ? 'Disponível' : 'Desativada' }}
+              </span>
+            </div>
+            <input
+              v-model="rtspUrl"
+              class="mt-2 w-full rounded-lg border border-gray-200 px-2 py-1.5 text-xs disabled:bg-gray-100"
+              :disabled="!rtspEnabled || processandoVisao"
+              type="url"
+              placeholder="rtsp://usuario:senha@camera/stream"
+              aria-label="URL da câmera RTSP"
+            />
+            <button
+              type="button"
+              class="mt-2 w-full rounded-lg bg-[#FD7917] px-3 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="!rtspEnabled || !rtspUrl || processandoVisao"
+              @click="conectarRtsp"
+            >
+              {{ rtspEnabled ? 'Conectar câmera RTSP' : 'Recurso desativado' }}
+            </button>
+            <p class="mt-1 text-[11px] text-gray-500">
+              Ative com <code>VITE_RTSP_ENABLED=true</code> somente em um ambiente autorizado.
+            </p>
+          </div>
+          <label class="mt-4 block text-xs font-bold">Demonstração</label>
+          <input
+            class="mt-1 w-full text-xs"
+            :disabled="processandoVisao"
+            type="file"
+            accept="video/*,.json,application/json"
+            @change="processarDemonstracao"
+          />
+        </template>
+        <p v-if="processandoVisao" class="mt-3 text-xs text-[#FD7917]" role="status" aria-live="polite">
+          Processando resultado...
+        </p>
+        <p v-if="mensagemDev" class="mt-3 text-xs text-[#FD7917]" role="status" aria-live="polite">{{ mensagemDev }}</p>
+        <button
+          v-if="camadaInstituicao === 2 && resultadoVisao"
+          type="button"
+          class="mt-3 w-full rounded-lg border border-[#F79347] px-3 py-2 text-xs font-bold text-[#FD7917] hover:bg-[#FDEEE8]"
+          @click="resultadoVisao = null"
+        >
+          Limpar resultado atual
+        </button>
+        <div v-if="camadaInstituicao === 2 && historicoVisao.length" class="mt-4 border-t border-[#FDEEE8] pt-3">
+          <h4 class="text-xs font-bold text-[#1E0D01]">Histórico desta sessão</h4>
+          <ul class="mt-2 max-h-24 space-y-1 overflow-y-auto text-[11px] text-gray-500">
+            <li v-for="item in historicoVisao" :key="item.id">
+              {{ item.nome }} — {{ item.status }} — {{ item.hora }}
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
 
@@ -440,7 +511,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { fetchApi } from '../utils/api'
-import { clearAuth, getAuthUser } from '@/utils/authStorage'
+import { clearAuth, getAuthUser, updateAuthUser } from '@/utils/authStorage'
+import { notify } from '@/utils/feedback'
 
 import DashVisitante from '../components/DashVisitante.vue'
 import DashAlunoServidor from '../components/DashAlunoServidor.vue'
@@ -463,7 +535,18 @@ const alterandoCamada = ref(false)
 const painelDevAberto = ref(false)
 const resultadoVisao = ref<any>(null)
 const mensagemDev = ref('')
+const processandoVisao = ref(false)
+interface HistoricoVisao {
+  id: string
+  nome: string
+  status: string
+  hora: string
+}
+const historicoVisao = ref<HistoricoVisao[]>([])
 const visionWorkerUrl = import.meta.env.VITE_VISION_WORKER_URL || 'http://localhost:8000'
+const rtspEnabled = import.meta.env.VITE_RTSP_ENABLED === 'true'
+const rtspUrl = ref('')
+const appVersion = import.meta.env.VITE_APP_VERSION || 'desenvolvimento'
 
 const isModalVeiculoAberto = ref(false)
 const isModalPerfilAberto = ref(false)
@@ -506,13 +589,13 @@ const buscarConfiguracao = async () => {
     if (data && data.totalVagas) totalVagasGlobal.value = data.totalVagas
     if (data && (data.camada === 1 || data.camada === 2)) camadaInstituicao.value = data.camada
   } catch (e) {
-    console.error('Erro banco vagas', e)
+    notify('Não foi possível carregar a configuração de vagas.', 'error')
   }
 }
 
 const buscarVagasOcupadas = async () => {
   try {
-    const res = await fetchApi('/api/users/admin/vagas-ocupadas')
+    const res = await fetchApi('/api/users/admin/vagas-ocupadas', { cache: 'no-store' })
     if (res.ok) {
       const data = await res.json()
       vagasOcupadas.value = data.ocupadas
@@ -520,14 +603,27 @@ const buscarVagasOcupadas = async () => {
       acessosManual.value = data.acessosManual
     }
   } catch (e) {
-    console.error('Erro banco vagas ocupadas', e)
+    notify('Não foi possível atualizar a ocupação das vagas.', 'error')
   }
 }
 
+let atualizacaoOcupacao = Promise.resolve()
+
 const componentePortariaRef = ref<any>(null)
+const roboLayer1Ativo = computed(() => {
+  const estado = componentePortariaRef.value?.simuladorAtivo
+  return estado === true || estado?.value === true
+})
+
+const alternarRoboLayer1 = () => {
+  if (camadaInstituicao.value !== 1) return
+  componentePortariaRef.value?.alternarSimuladorRobo?.()
+}
 
 const registrarAcesso = (tipoAcao?: string) => {
-  buscarVagasOcupadas()
+  atualizacaoOcupacao = atualizacaoOcupacao
+    .catch(() => undefined)
+    .then(() => buscarVagasOcupadas())
 
   if (tipoAcao && tipoAcao.endsWith('_reset') && componentePortariaRef.value) {
     componentePortariaRef.value.resetarLeitura?.()
@@ -540,7 +636,7 @@ const buscarSegurancaAtivo = async () => {
     const res = await fetchApi('/api/users/escala/ativa')
     if (res.ok) segurancaAtivo.value = await res.json()
   } catch (e) {
-    console.error('Erro banco seguranca', e)
+    notify('Não foi possível carregar o responsável pela segurança.', 'error')
   }
 }
 
@@ -553,6 +649,12 @@ const lidarFechamentoEscala = (houveAlteracao: boolean) => {
 }
 
 onMounted(() => {
+  try {
+    const salvo = sessionStorage.getItem('visao-historico')
+    if (salvo) historicoVisao.value = JSON.parse(salvo) as HistoricoVisao[]
+  } catch {
+    sessionStorage.removeItem('visao-historico')
+  }
   const userStorage = getAuthUser()
 
   if (userStorage) {
@@ -572,15 +674,20 @@ onMounted(() => {
 
 const salvarConfigCampus = async (novasVagas: number) => {
   try {
-    await fetchApi('/api/users/configuracao', {
+    const resposta = await fetchApi('/api/users/configuracao', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ totalVagas: novasVagas }),
     })
+    if (!resposta.ok) {
+      const dados = await resposta.json()
+      notify(dados.erro || 'Não foi possível salvar a configuração.', 'error')
+      return
+    }
     totalVagasGlobal.value = novasVagas
     isModalConfigCampusAberto.value = false
   } catch (e) {
-    console.error(e)
+    notify('Falha de comunicação com a API.', 'error')
   }
 }
 
@@ -594,30 +701,45 @@ const alterarCamada = async (camada: number) => {
     })
     const data = await res.json()
     if (!res.ok) {
-      alert(data.erro || 'Não foi possível alterar a camada.')
+      notify(data.erro || 'Não foi possível alterar a camada.', 'error')
       return
     }
     camadaInstituicao.value = data.camada
     tipoUsuario.value = 'seguranca'
   } catch (error) {
-    console.error('Erro ao alterar camada:', error)
-    alert('Falha de comunicação com a API.')
+    notify('Falha de comunicação com a API.', 'error')
   } finally {
     alterandoCamada.value = false
   }
 }
 
 const enviarResultadoVisao = async (resultado: any) => {
+  processandoVisao.value = true
   resultadoVisao.value = resultado
-  const respostaApi = await fetchApi('/api/users/visao/evento', {
-    method: 'POST',
-    body: JSON.stringify(resultado),
-  })
-  const retorno = await respostaApi.json()
-  resultadoVisao.value = { ...resultado, ...retorno }
-  mensagemDev.value = respostaApi.ok
-    ? `Resultado recebido: ${retorno.status || 'processado'}.`
-    : retorno.erro || 'A API rejeitou o resultado do worker.'
+  try {
+    const respostaApi = await fetchApi('/api/users/visao/evento', {
+      method: 'POST',
+      body: JSON.stringify(resultado),
+    })
+    const retorno = await respostaApi.json()
+    resultadoVisao.value = { ...resultado, ...retorno }
+    historicoVisao.value = [
+      {
+        id: `${Date.now()}-${historicoVisao.value.length}`,
+        nome: resultado.video || 'result.json',
+        status: retorno.status || 'processado',
+        hora: new Date().toLocaleTimeString('pt-BR'),
+      },
+      ...historicoVisao.value,
+    ].slice(0, 20)
+    sessionStorage.setItem('visao-historico', JSON.stringify(historicoVisao.value))
+    mensagemDev.value = respostaApi.ok
+      ? `Resultado recebido: ${retorno.status || 'processado'}.`
+      : retorno.erro || 'A API rejeitou o resultado do worker.'
+    notify(mensagemDev.value, respostaApi.ok ? 'success' : 'error')
+  } finally {
+    processandoVisao.value = false
+  }
 }
 
 const processarDemonstracao = async (event: Event) => {
@@ -649,10 +771,33 @@ const processarDemonstracao = async (event: Event) => {
     }
     await enviarResultadoVisao(resultado)
   } catch (error) {
-    console.error('Erro ao processar ou enviar vídeo:', error)
     resultadoVisao.value = null
     mensagemDev.value =
       'Não foi possível conectar ao vision-worker ou à API. Verifique se os serviços estão ativos.'
+    notify(mensagemDev.value, 'error')
+  }
+}
+
+const conectarRtsp = async () => {
+  if (!rtspEnabled || !rtspUrl.value) return
+  processandoVisao.value = true
+  mensagemDev.value = 'Conectando à câmera RTSP...'
+  try {
+    const resposta = await fetch(`${visionWorkerUrl}/rtsp/connect`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: rtspUrl.value }),
+    })
+    const resultado = await resposta.json()
+    mensagemDev.value = resultado.erro || (
+      resposta.ok ? 'Câmera RTSP conectada.' : 'Câmera RTSP indisponível.'
+    )
+    notify(mensagemDev.value, resposta.ok ? 'success' : 'error')
+  } catch {
+    mensagemDev.value = 'Não foi possível conectar ao vision-worker.'
+    notify(mensagemDev.value, 'error')
+  } finally {
+    processandoVisao.value = false
   }
 }
 
@@ -762,7 +907,7 @@ const receberNovoVeiculo = async (dadosFormulario: any) => {
       })
       if (!res.ok) throw new Error('Erro no backend ao registrar acesso manual')
 
-      alert('Acesso manual liberado e registrado na tabela!')
+      notify('Acesso manual liberado e registrado na tabela!', 'success')
 
       isModalVeiculoAberto.value = false
       dadosCamera.value = null
@@ -785,7 +930,7 @@ const receberNovoVeiculo = async (dadosFormulario: any) => {
       })
       const cadastroData = await cadastro.json()
       if (!cadastro.ok) {
-        alert(cadastroData.erro || 'Não foi possível cadastrar o veículo.')
+        notify(cadastroData.erro || 'Não foi possível cadastrar o veículo.', 'error')
         return
       }
 
@@ -803,7 +948,7 @@ const receberNovoVeiculo = async (dadosFormulario: any) => {
         }),
       })
       if (!liberacao.ok) throw new Error('Erro ao registrar liberação')
-      alert('Veículo cadastrado para o usuário e acesso liberado!')
+      notify('Veículo cadastrado para o usuário e acesso liberado!', 'success')
       isModalVeiculoAberto.value = false
       dadosCamera.value = null
       registrarAcesso('manual_reset')
@@ -813,7 +958,7 @@ const receberNovoVeiculo = async (dadosFormulario: any) => {
     const userId = usuarioLogado.value?.id
 
     if (!userId) {
-      alert('Erro: ID do usuário não carregado na sessão.')
+      notify('Erro: ID do usuário não carregado na sessão.', 'error')
       return
     }
 
@@ -838,7 +983,7 @@ const receberNovoVeiculo = async (dadosFormulario: any) => {
         }),
       })
       if (!res.ok) throw new Error('Erro na edição')
-      alert('Visita atualizada com sucesso!')
+      notify('Visita atualizada com sucesso!', 'success')
       window.location.reload()
       return
     }
@@ -858,7 +1003,7 @@ const receberNovoVeiculo = async (dadosFormulario: any) => {
         },
       )
       if (!res.ok) throw new Error('Erro na edição do veículo')
-      alert('Veículo atualizado com sucesso!')
+      notify('Veículo atualizado com sucesso!', 'success')
       window.location.reload()
       return
     }
@@ -872,13 +1017,13 @@ const receberNovoVeiculo = async (dadosFormulario: any) => {
     const data = await res.json()
 
     if (!res.ok) {
-      alert(`Erro do Servidor: ${data.erro || 'Verifique o terminal do backend'}`)
-      console.error('Resposta de erro do Node:', data)
+      notify(`Erro do servidor: ${data.erro || 'Verifique o terminal do backend'}`, 'error')
       return
     }
 
-    alert(
+    notify(
       dadosFormulario.isAgendamento ? 'Visita agendada com sucesso!' : 'Veículo salvo com sucesso!',
+      'success',
     )
 
     isModalVeiculoAberto.value = false
@@ -886,14 +1031,13 @@ const receberNovoVeiculo = async (dadosFormulario: any) => {
     registrarAcesso('auto_reset')
     window.location.reload()
   } catch (error) {
-    console.error('Erro fatal no fetch:', error)
-    alert('Falha de conexão com a API. O Backend está rodando?')
+    notify('Falha de conexão com a API. O backend está rodando?', 'error')
   }
 }
 
 const atualizarDadosLocais = (usuarioAtualizado: any) => {
   usuarioLogado.value = { ...usuarioLogado.value, ...usuarioAtualizado }
-  localStorage.setItem('user', JSON.stringify(usuarioLogado.value))
+  updateAuthUser(usuarioLogado.value)
 }
 
 const definirPapelTeste = (novoPapel: string) => {

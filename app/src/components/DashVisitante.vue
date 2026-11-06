@@ -4,7 +4,10 @@
       <h2 class="text-[22px] font-semibold text-[#1E0D01] mb-[13px] h-[33px] flex items-center">
         Minhas Visitas Futuras
       </h2>
-      <div class="w-full grid grid-cols-3 gap-5">
+      <div v-if="carregandoVisitas" class="w-full grid grid-cols-3 gap-5" aria-label="Carregando visitas">
+        <div v-for="item in 3" :key="item" class="aspect-[293/149] animate-pulse rounded-2xl bg-gray-100"></div>
+      </div>
+      <div v-else class="w-full grid grid-cols-3 gap-5">
         <div
           v-for="(visita, index) in visitasFuturas.slice(0, 2)"
           :key="visita._id || index"
@@ -160,8 +163,11 @@
           <div>Hora de Saída</div>
         </div>
 
+        <div v-if="carregandoVisitas" class="space-y-2" aria-label="Carregando histórico">
+          <div v-for="item in 4" :key="item" class="h-9 animate-pulse rounded-full bg-gray-100"></div>
+        </div>
         <div
-          v-if="historicoVisitas.length === 0"
+          v-else-if="historicoVisitas.length === 0"
           class="flex flex-col items-center justify-center h-[100px] text-gray-400 text-sm font-medium gap-2"
         >
           <svg
@@ -215,6 +221,7 @@
 import { ref, computed, watch } from 'vue'
 import ModalListarVisitas from './ModalListarVisitas.vue'
 import { fetchApi } from '../utils/api'
+import { notify } from '../utils/feedback'
 
 const props = defineProps<{ usuarioId?: string }>()
 
@@ -222,9 +229,11 @@ const emit = defineEmits(['abrir-cadastro', 'abrir-edicao'])
 
 const isModalListarAberto = ref(false)
 const visitas = ref<any[]>([])
+const carregandoVisitas = ref(false)
 
 const fetchVisitas = async () => {
   if (!props.usuarioId) return
+  carregandoVisitas.value = true
 
   try {
     const res = await fetchApi(`/api/users/${props.usuarioId}/visitas`)
@@ -232,7 +241,9 @@ const fetchVisitas = async () => {
       visitas.value = await res.json()
     }
   } catch (e) {
-    console.error('Erro ao buscar visitas:', e)
+    notify('Não foi possível carregar suas visitas.', 'error')
+  } finally {
+    carregandoVisitas.value = false
   }
 }
 
@@ -258,11 +269,11 @@ const inativarVisita = async (id: string) => {
   try {
     const res = await fetchApi(`/api/users/visitas/${id}/inativar`, { method: 'PUT' })
     if (res.ok) {
-      alert('Visita cancelada com sucesso!')
+      notify('Visita cancelada com sucesso!', 'success')
       fetchVisitas()
     }
   } catch (e) {
-    console.error(e)
+    notify('Não foi possível cancelar a visita. Tente novamente.', 'error')
   }
 }
 

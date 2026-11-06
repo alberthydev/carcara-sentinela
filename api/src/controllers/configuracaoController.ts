@@ -23,6 +23,14 @@ export const updateConfiguracao = async (req: Request, res: Response) => {
       return;
     }
 
+    if (
+      totalVagas !== undefined &&
+      (typeof totalVagas !== "number" || !Number.isInteger(totalVagas) || totalVagas < 1 || totalVagas > 100000)
+    ) {
+      res.status(400).json({ erro: "O total de vagas deve ser um inteiro entre 1 e 100000." });
+      return;
+    }
+
     const atualizacoes: { totalVagas?: number; camada?: 1 | 2 } = {};
     if (totalVagas !== undefined) atualizacoes.totalVagas = totalVagas;
     if (camada !== undefined) atualizacoes.camada = camada;

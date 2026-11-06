@@ -4,7 +4,10 @@
       <h2 class="text-[22px] font-semibold text-[#1E0D01] mb-[13px] h-[33px] flex items-center">
         Meus Veículos
       </h2>
-      <div class="w-full grid grid-cols-3 gap-5">
+      <div v-if="carregandoVeiculos" class="w-full grid grid-cols-3 gap-5" aria-label="Carregando veículos">
+        <div v-for="item in 3" :key="item" class="aspect-[293/149] animate-pulse rounded-2xl bg-gray-100"></div>
+      </div>
+      <div v-else class="w-full grid grid-cols-3 gap-5">
         <div
           v-for="(veiculo, index) in meusVeiculos.slice(0, 2)"
           :key="veiculo.placa || index"
@@ -153,8 +156,11 @@
           <div>Hora de Saída</div>
         </div>
 
+        <div v-if="carregandoHistorico" class="space-y-2" aria-label="Carregando histórico">
+          <div v-for="item in 4" :key="item" class="h-9 animate-pulse rounded-full bg-gray-100"></div>
+        </div>
         <div
-          v-if="historicoAcesso.length === 0"
+          v-else-if="historicoAcesso.length === 0"
           class="flex flex-col items-center justify-center h-[100px] text-gray-400 text-sm font-medium gap-2"
         >
           Nenhum acesso registrado.
@@ -194,6 +200,7 @@
 import { ref, watch } from 'vue'
 import ModalListarVeiculos from './ModalListarVeiculos.vue'
 import { fetchApi } from '../utils/api'
+import { notify } from '../utils/feedback'
 
 const props = defineProps<{ usuarioId?: string }>()
 const emit = defineEmits(['abrir-cadastro', 'abrir-edicao'])
@@ -201,24 +208,32 @@ const emit = defineEmits(['abrir-cadastro', 'abrir-edicao'])
 const isModalListarAberto = ref(false)
 const meusVeiculos = ref<any[]>([])
 const historicoAcesso = ref<any[]>([])
+const carregandoVeiculos = ref(false)
+const carregandoHistorico = ref(false)
 
 const fetchVeiculos = async () => {
   if (!props.usuarioId) return
+  carregandoVeiculos.value = true
   try {
     const res = await fetchApi(`/api/users/${props.usuarioId}/veiculos`)
     if (res.ok) meusVeiculos.value = await res.json()
   } catch (e) {
-    console.error('Erro ao buscar veículos:', e)
+    notify('Não foi possível carregar seus veículos.', 'error')
+  } finally {
+    carregandoVeiculos.value = false
   }
 }
 
 const fetchHistorico = async () => {
   if (!props.usuarioId) return
+  carregandoHistorico.value = true
   try {
     const res = await fetchApi(`/api/users/${props.usuarioId}/acessos`)
     if (res.ok) historicoAcesso.value = await res.json()
   } catch (e) {
-    console.error('Erro ao buscar histórico:', e)
+    notify('Não foi possível carregar seu histórico de acesso.', 'error')
+  } finally {
+    carregandoHistorico.value = false
   }
 }
 
@@ -241,11 +256,11 @@ const deletarVeiculo = async (placa: string) => {
       method: 'DELETE',
     })
     if (res.ok) {
-      alert('Veículo removido com sucesso!')
+      notify('Veículo removido com sucesso!', 'success')
       fetchVeiculos()
     }
   } catch (e) {
-    console.error(e)
+    notify('Não foi possível remover o veículo. Tente novamente.', 'error')
   }
 }
 

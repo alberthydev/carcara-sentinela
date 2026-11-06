@@ -1,6 +1,31 @@
 <template>
   <RouterView />
+  <div class="fixed right-4 top-4 z-[100] flex w-[min(90vw,24rem)] flex-col gap-2" aria-live="polite">
+    <div
+      v-for="mensagem in mensagens"
+      :key="mensagem.id"
+      class="rounded-xl border bg-white px-4 py-3 text-sm shadow-lg"
+      :class="mensagem.kind === 'error' ? 'border-red-200 text-red-800' : mensagem.kind === 'success' ? 'border-green-200 text-green-800' : 'border-orange-200 text-carcara-marrom'"
+    >
+      {{ mensagem.text }}
+    </div>
+  </div>
 </template>
+
+<script setup lang="ts">
+import { onUnmounted, ref } from 'vue'
+import { onFeedback, type FeedbackMessage } from './utils/feedback'
+
+const mensagens = ref<FeedbackMessage[]>([])
+const unsubscribe = onFeedback((mensagem) => {
+  mensagens.value = [...mensagens.value, mensagem]
+  window.setTimeout(() => {
+    mensagens.value = mensagens.value.filter((item) => item.id !== mensagem.id)
+  }, 5000)
+})
+
+onUnmounted(unsubscribe)
+</script>
 
 <style>
 html,

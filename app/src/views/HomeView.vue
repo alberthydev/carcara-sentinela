@@ -203,7 +203,6 @@ const login = () => {
 
 const submitForm = () => {
   // handle form submission
-  console.log('Form submitted:', form)
 }
 </script>
 

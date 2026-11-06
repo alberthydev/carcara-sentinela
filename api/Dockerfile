@@ -17,6 +17,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=builder /usr/src/app/dist ./dist
+COPY --from=builder /usr/src/app/src/docs ./dist/docs
 
 RUN addgroup -S nodejs && adduser -S nodejs -G nodejs
 USER nodejs

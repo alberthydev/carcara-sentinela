@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import jwt from "jsonwebtoken";
 import { afterEach, describe, it } from "node:test";
 import request from "supertest";
+import nodemailer from "nodemailer";
 import { createApp } from "../src/server";
 import Configuracao from "../src/models/Configuracao";
 import User from "../src/models/User";
@@ -11,6 +12,7 @@ import RegistroAcesso from "../src/models/RegistroAcesso";
 const app = createApp();
 const JWT_SECRET = "chave_mestra_carcara_2026";
 const originals: Array<{ target: object; key: string; value: unknown }> = [];
+const originalEnv = new Map<string, string | undefined>();
 
 const replaceMethod = (target: object, key: string, value: unknown) => {
   if (!originals.some((original) => original.target === target && original.key === key)) {
@@ -24,7 +26,18 @@ afterEach(() => {
     (target as Record<string, unknown>)[key] = value;
   }
   originals.length = 0;
+  for (const [key, value] of originalEnv) {
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+  originalEnv.clear();
 });
+
+const replaceEnv = (key: string, value: string | undefined) => {
+  if (!originalEnv.has(key)) originalEnv.set(key, process.env[key]);
+  if (value === undefined) delete process.env[key];
+  else process.env[key] = value;
+};
 
 const token = (tipo = "seguranca") =>
   jwt.sign({ id: "usuario-teste", tipo }, JWT_SECRET, { expiresIn: "1h" });
@@ -64,6 +77,163 @@ describe("autenticação e autorização da API", () => {
 
     assert.equal(resposta.status, 400);
     assert.equal(resposta.body.erro, "Dados de login inválidos.");
+  });
+
+  it("impede acesso ao perfil de outro usuário", async () => {
+    const resposta = await request(app)
+      .put("/api/users/outro-usuario/perfil")
+      .set("Authorization", ["Bearer", token("visitante")].join(" "))
+      .send({ nome: "Tentativa" });
+
+    assert.equal(resposta.status, 403);
+  });
+
+  it("permite alterar a camada somente para o usuário dev", async () => {
+    const resposta = await request(app)
+      .put("/api/users/configuracao/camada")
+      .set("Authorization", ["Bearer", token("admin")].join(" "))
+      .send({ camada: 2 });
+
+    assert.equal(resposta.status, 403);
+  });
+
+  it("restringe listagem administrativa por função", async () => {
+    const resposta = await request(app)
+      .get("/api/users/admin/usuarios")
+      .set("Authorization", ["Bearer", token("seguranca")].join(" "));
+
+    assert.equal(resposta.status, 403);
+  });
+});
+
+describe("validação de veículos e visitas", () => {
+  it("rejeita veículo com placa ou dados incompletos", async () => {
+    const resposta = await request(app)
+      .post("/api/users/usuario-teste/veiculos")
+      .set("Authorization", ["Bearer", token("visitante")].join(" "))
+      .send({ placa: "ABC", marca: "Fiat" });
+
+    assert.equal(resposta.status, 400);
+    assert.equal(resposta.body.erro, "Informe placa, marca, modelo e cor válidos.");
+  });
+
+  it("rejeita visita com data, horário ou veículo inválidos", async () => {
+    const resposta = await request(app)
+      .post("/api/users/usuario-teste/visitas")
+      .set("Authorization", ["Bearer", token("visitante")].join(" "))
+      .send({
+        dataVisita: "amanhã",
+        horaVisita: "25:99",
+        placa: "ABC1234",
+        marca: "Fiat",
+        modelo: "Argo",
+        cor: "Azul",
+      });
+
+    assert.equal(resposta.status, 400);
+    assert.equal(resposta.body.erro, "Informe data, horário e dados válidos do veículo.");
+  });
+});
+
+describe("recuperação de senha", () => {
+  it("rejeita solicitação sem e-mail", async () => {
+    const resposta = await request(app).post("/api/users/senha/recuperar").send({});
+
+    assert.equal(resposta.status, 400);
+    assert.equal(resposta.body.erro, "Informe um e-mail válido.");
+  });
+
+  it("rejeita redefinição com senha fora da política", async () => {
+    const resposta = await request(app)
+      .post("/api/users/senha/redefinir")
+      .send({ token: "token-invalido", password: "fraca" });
+
+    assert.equal(resposta.status, 400);
+    assert.equal(resposta.body.erro, "Token ou senha inválidos.");
+  });
+
+  it("informa quando o SMTP não está configurado", async () => {
+    replaceEnv("SMTP_HOST", undefined);
+    replaceMethod(User, "findOne", async () => ({ email: "ana@example.com" }));
+
+    const resposta = await request(app)
+      .post("/api/users/senha/recuperar")
+      .send({ email: "ANA@example.com" });
+
+    assert.equal(resposta.status, 503);
+    assert.equal(resposta.body.erro, "O envio de e-mails ainda não está configurado no servidor.");
+  });
+
+  it("envia o token, redefine a senha e invalida o token após o uso", async () => {
+    const usuario = {
+      email: "ana@example.com",
+      resetTokenHash: undefined as string | undefined,
+      resetTokenExpiresAt: undefined as Date | undefined,
+      senha: "senha-anterior",
+      save: async () => usuario,
+    };
+    let mensagem = "";
+    let consultas = 0;
+    replaceEnv("SMTP_HOST", "smtp.test");
+    replaceEnv("SMTP_PORT", "587");
+    replaceEnv("SMTP_USER", "test-user");
+    replaceEnv("SMTP_PASSWORD", "test-password");
+    replaceMethod(nodemailer, "createTransport", () => ({
+      sendMail: async (opcoes: { text: string }) => {
+        mensagem = opcoes.text;
+      },
+    }));
+    replaceMethod(User, "findOne", async () => {
+      consultas += 1;
+      return consultas === 1 ? usuario : consultas === 2 ? usuario : null;
+    });
+
+    const solicitacao = await request(app)
+      .post("/api/users/senha/recuperar")
+      .send({ email: usuario.email });
+    const tokenEnviado = mensagem.match(/token=([a-f0-9]{64})/)?.[1];
+
+    assert.equal(solicitacao.status, 200);
+    assert.ok(tokenEnviado);
+    assert.ok(usuario.resetTokenHash);
+
+    const redefinicao = await request(app)
+      .post("/api/users/senha/redefinir")
+      .send({ token: tokenEnviado, password: "NovaSenha1!" });
+
+    assert.equal(redefinicao.status, 200);
+    assert.equal(usuario.resetTokenHash, undefined);
+    assert.equal(usuario.resetTokenExpiresAt, undefined);
+
+    const reutilizacao = await request(app)
+      .post("/api/users/senha/redefinir")
+      .send({ token: tokenEnviado, password: "OutraSenha1!" });
+
+    assert.equal(reutilizacao.status, 400);
+    assert.equal(reutilizacao.body.erro, "O link é inválido ou expirou.");
+  });
+
+  it("rejeita token expirado", async () => {
+    replaceMethod(User, "findOne", async () => null);
+
+    const resposta = await request(app)
+      .post("/api/users/senha/redefinir")
+      .send({ token: "a".repeat(64), password: "NovaSenha1!" });
+
+    assert.equal(resposta.status, 400);
+    assert.equal(resposta.body.erro, "O link é inválido ou expirou.");
+  });
+});
+
+describe("CORS", () => {
+  it("permite somente as origens configuradas", async () => {
+    replaceEnv("CORS_ORIGIN", "https://portal.example");
+    const appWithCors = createApp();
+    const permitida = await request(appWithCors).get("/health").set("Origin", "https://portal.example");
+    const bloqueada = await request(appWithCors).get("/health").set("Origin", "https://outro.example");
+
+    assert.equal(permitida.headers["access-control-allow-origin"], "https://portal.example");
+    assert.equal(bloqueada.headers["access-control-allow-origin"], undefined);
   });
 });
 

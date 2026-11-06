@@ -17,7 +17,7 @@ export interface IUser extends Document {
   resetTokenExpiresAt?: Date;
   nome: string;
   sobrenome: string;
-  tipo: "visitante" | "aluno" | "servidor";
+  tipo: "visitante" | "aluno" | "servidor" | "admin" | "seguranca" | "dev";
   fotoUrl: string;
   ativo: boolean;
   carros?: ICarro[];

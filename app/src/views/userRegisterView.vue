@@ -21,6 +21,9 @@
           alt="Logo Carcará Sentinela"
           class="auth-logo h-[140px] w-[140px] shrink-0 object-contain"
         />
+            <button type="button" class="self-start text-xs text-carcara-marrom underline" @click="mostrarSenha = !mostrarSenha">
+        {{ mostrarSenha ? 'Ocultar senha' : 'Mostrar senha' }}
+            </button>
         <h1 class="text-4xl lg:text-6xl font-serif tracking-wide text-carcara-marrom">
           Carcará <span class="text-carcara-laranja font-medium">Sentinela</span>
         </h1>
@@ -100,6 +103,8 @@
 
         <div
           v-if="mensagem"
+          role="status"
+          aria-live="polite"
           :class="[
             'p-3 lg:p-4 rounded-lg text-center font-bold text-xs lg:text-sm border transition-all',
             tipoAlerta === 'sucesso' ? 'bg-green-50 text-green-800 border-green-200' : 'bg-red-50 text-red-800 border-red-200',
@@ -182,10 +187,11 @@
           </div>
 
           <div class="flex flex-col items-start gap-1">
-            <label class="text-xs lg:text-sm font-semibold text-carcara-marrom">Senha</label>
+            <label for="register-password" class="text-xs lg:text-sm font-semibold text-carcara-marrom">Senha</label>
             <input
+              id="register-password"
               v-model="form.senha"
-              type="password"
+              :type="mostrarSenha ? 'text' : 'password'"
               placeholder="••••••••"
               class="auth-password w-full bg-white rounded-lg py-2.5 px-4 text-sm lg:text-base outline-none disabled:bg-white disabled:cursor-not-allowed transition-all duration-200 focus:ring-2 focus:ring-white/50"
               :disabled="form.tipo !== 'visitante' && !validadoNoIFC"
@@ -254,6 +260,7 @@ const mensagem = ref('')
 const tipoAlerta = ref('')
 const carregando = ref(false)
 const senhaFocada = ref(false)
+const mostrarSenha = ref(false)
 const validadoNoIFC = ref(false)
 
 watch(
@@ -270,7 +277,8 @@ watch(
 
 const validarComIFC = async () => {
   if (!form.value.cpf || !form.value.matricula) {
-    alert('Preencha CPF e Matrícula primeiro.')
+    mensagem.value = 'Preencha CPF e matrícula primeiro.'
+    tipoAlerta.value = 'erro'
     return
   }
 
@@ -357,7 +365,7 @@ const realizarCadastro = async () => {
       tipoAlerta.value = 'erro'
     }
   } catch (erro) {
-    mensagem.value = `Erro de conexão. A API está ligada no Docker? error: ${erro}`
+    mensagem.value = 'Erro de conexão. Verifique se a API está disponível.'
     tipoAlerta.value = 'erro'
   } finally {
     carregando.value = false
@@ -424,8 +432,6 @@ const handleCredentialResponse = async (response: GoogleAuthResponse) => {
 onMounted(() => {
   const clientIdReal = String(import.meta.env.VITE_GOOGLE_CLIENT_ID).trim()
 
-  console.log('DEBUG CLIENT ID FIXO:', clientIdReal)
-
   const inicializarGoogleAuth = () => {
     // @ts-expect-error : google é definido no script externo
     if (typeof google !== 'undefined' && google.accounts?.id) {
@@ -438,9 +444,9 @@ onMounted(() => {
           cancel_on_tap_outside: true,
         })
 
-        console.log('Google Auth inicializado com sucesso no script!')
       } catch (err) {
-        console.error('Erro interno ao rodar o initialize do Google:', err)
+        mensagem.value = 'Não foi possível inicializar o cadastro com Google.'
+        tipoAlerta.value = 'erro'
       }
     }
   }
@@ -452,17 +458,20 @@ onMounted(() => {
 
 const loginComGoogle = () => {
   if (!form.value.tipo) {
-    alert('Por favor, selecione seu perfil antes de continuar com o Google!')
+    mensagem.value = 'Selecione seu perfil antes de continuar com o Google.'
+    tipoAlerta.value = 'erro'
     return
   }
 
   if (!form.value.cpf) {
-    alert('Por favor, insira o seu CPF antes de continuar com o Google!')
+    mensagem.value = 'Informe o seu CPF antes de continuar com o Google.'
+    tipoAlerta.value = 'erro'
     return
   }
 
   if ((form.value.tipo === 'aluno' || form.value.tipo === 'servidor') && !validadoNoIFC.value) {
-    alert('Por favor, valide sua identidade no Sistema IFC antes de vincular sua conta Google.')
+    mensagem.value = 'Valide sua identidade no Sistema IFC antes de vincular sua conta Google.'
+    tipoAlerta.value = 'erro'
     return
   }
 
@@ -471,7 +480,8 @@ const loginComGoogle = () => {
     // @ts-expect-error : google.accounts.id.prompt é definido no script externo do Google, mas o ESLint não consegue detectar
     google.accounts.id.prompt()
   } else {
-    alert('Erro ao carregar SDK do Google. Verifique sua conexão.')
+    mensagem.value = 'O cadastro com Google está indisponível no momento.'
+    tipoAlerta.value = 'erro'
   }
 }
 

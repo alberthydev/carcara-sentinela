@@ -5,27 +5,55 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   api:
     build: ./api
     ports:
       - "3000:3000"
-    volumes:
-      - ./api:/usr/src/app
-      - /usr/src/app/node_modules
     environment:
       - PORT=3000
       - MONGO_URI=mongodb://banco_dados:27017/carcara_db
+      - API_VERSION=1.0.0
+      - API_BUILD=compose
+      - CORS_ORIGIN=http://localhost,http://127.0.0.1
     depends_on:
-      - banco_dados
-    command: npm run dev
+      banco_dados:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  vision_worker:
+    build:
+      context: ./vision-worker
+    ports:
+      - "8000:8000"
+    environment:
+      - VISION_PORT=8000
+      - CORS_ORIGIN=http://localhost
+      - VISION_RTSP_ENABLED=false
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   app:
     build: ./app
     ports:
       - "80:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+      vision_worker:
+        condition: service_healthy
 
 volumes:
   mongo_data:

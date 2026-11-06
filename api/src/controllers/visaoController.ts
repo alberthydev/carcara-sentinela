@@ -40,7 +40,11 @@ export const receberResultadoVisao = async (
 
   if (
     !placa ||
+    placa.length < 6 ||
+    placa.length > 8 ||
     typeof confianca !== "number" ||
+    confianca < 0 ||
+    confianca > 1 ||
     typeof resultado.liberacao_automatica !== "boolean"
   ) {
     res.status(400).json({

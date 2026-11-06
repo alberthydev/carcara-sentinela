@@ -56,31 +56,34 @@ A solução é desenvolvida em **código aberto**, focada no cadastramento de se
 | Servidor / API       | Node.js + Express.js                    |
 | Frontend Web         | Vue.js                                  |
 | Banco de Dados       | MongoDB                                 |
-| Aquisição de dados | Câmeras LPR (infraestrutura existente) |
+| Processamento Layer 2 | Python + OpenCV + Tesseract |
+| Aquisição de dados | Câmeras LPR, vídeos e RTSP opcional |
 
 ---
 
 ## Arquitetura do Sistema
 
 ```mermaid
-flowchart TD
-    A["Câmeras LPR (2x)"] e1@-->|JSON| B{"API de Ingestão \n(Express.js)"}
-    e1@{ animate: true, curve: linear }
-    B e2@<--> C[(MongoDB)]
-    B e3@<--> D("Lógica de Whitelist \n(Cruzamento de Dados)")
-    D e4@<--> E("Dashboard Segurança \n(Vue.js)\nPainel Segurança")
-    D e5@<--> F("Dashboard Usuários (Vue.js)\n Cadastro de Veículos\n Servidores/Alunos/Visitantes")
-    e2@{ curve: linear }
-    e3@{ curve: linear }
-    e4@{ curve: linear }
-    e5@{ curve: linear }
+flowchart LR
+    U["Usuários e segurança"] --> A["Frontend Vue"]
+    LPR["Câmeras LPR / robô Layer 1"] -->|JSON| B{"API Express"}
+    A -->|JWT, HTTP e SSE| B
+    V["Vídeo ou result.json Layer 2"] --> W["Vision-worker\nOpenCV + Tesseract"]
+    W -->|resultado normalizado| B
+    B <--> C[(MongoDB)]
+    B --> D{"Camada da instituição"}
+    D --> E["Layer 1\nLPR e SSE"]
+    D --> F["Layer 2\nvisão computacional"]
+    R["RTSP opcional\ndesativado"] -.-> W
   
-    style A fill:#dce8f5,stroke:#aac4e0
+    style A fill:#FFFDA1,stroke:#FFFD00
     style B fill:#D6FFDD,stroke:#00FF59
     style C fill:#EDEDED,stroke:#5E5E5E
     style D fill:#E9E8FF,stroke:#716BFF
-    style E fill:#FFFDA1,stroke:#FFFD00
-    style F fill:#FFFDA1,stroke:#FFFD00
+    style E fill:#dce8f5,stroke:#aac4e0
+    style F fill:#dce8f5,stroke:#aac4e0
+    style W fill:#E9E8FF,stroke:#716BFF
+    style R fill:#f5dcdc,stroke:#e0aaaa
 ```
 
 ## Camadas de recursos
@@ -92,9 +95,15 @@ Cada instituição possui uma camada configurada pela API:
 
 A camada é persistida em `Configuracao.camada` e pode ser alterada pelo endpoint autenticado de configuração. A ausência do campo em instalações existentes mantém o comportamento compatível com a Layer 1.
 
+## Operação local
+
+Use `docker compose -f docker-compose.dev.yml up` para desenvolvimento e `docker compose up --build` para produção local. A API expõe `/health` (processo) e `/health/ready` (processo + MongoDB); o vision-worker expõe `/health`.
+
+Na **Layer 1**, o painel de segurança mantém o SSE e o robô de placas pode ser iniciado ou pausado apenas pelas ferramentas Dev. O status diferencia robô ativo, SSE conectado e câmera offline. Na **Layer 2**, o SSE e o robô não são abertos: envie um vídeo ou `result.json` pelo painel Dev. O worker retorna leituras consolidadas com confiança e o painel registra o resultado na sessão, permitindo limpar apenas a leitura atual. A integração RTSP possui toggle próprio e fica desativada por padrão.
+
 ## Estratégia de testes e visão computacional
 
-O primeiro ciclo prioriza testes de contrato HTTP/caixa-preta para liberação de recursos por camada, além de type-check e build da API. A UI fica para uma etapa posterior, depois que os contratos de backend estiverem estabilizados.
+O projeto combina testes de contrato HTTP/caixa-preta, testes unitários do vision-worker e testes de UI. A API usa Node Test Runner, `tsx` e Supertest; o worker usa Pytest; a UI usa Vitest e Vue Test Utils. Todos os fluxos devem passar por type-check e build.
 
 Para a Layer 2, FFmpeg é adequado para captura/decodificação e OpenCV para seleção de frames, correção de perspectiva e melhoria da imagem. O Tesseract pode ser usado como OCR após essa etapa, mas não é um detector de placas por si só e tende a exigir calibração por câmera. A implementação deve ficar isolada em um worker de processamento, enviar eventos normalizados para a API e incluir confiança, frame de origem e revisão humana; antes da adoção, deve ser comparada com um detector especializado de placas (por exemplo, YOLO + OCR) em amostras reais do campus.
 
@@ -102,30 +111,35 @@ Para a Layer 2, FFmpeg é adequado para captura/decodificação e OpenCV para se
 
 ```mermaid
 flowchart LR
-    A([Chegada do\nVeículo]) --> B[Leitura da Placa\ndo Veículo com LPR]
-    B --> C[Extração dos Dados\npara JSON: Horário,\nPlaca e Cor]
-    C --> D[(Análise do JSON\njunto ao Banco\nde Dados)]
+    A([Chegada do\nVeículo]) --> B{Origem da leitura}
+    B -->|Layer 1| C[Evento LPR via SSE]
+    B -->|Layer 2| D[Vídeo/result.json\nVision-worker]
+    C --> E[(Análise junto\nao MongoDB)]
+    D --> E
+    E --> F{Placa cadastrada?}
  
-    D --> E[Veículo Não\nEncontrado]
-    D --> F[Veículo\nEncontrado]
+    F --> G[Veículo não\ncadastrado]
+    F --> H[Veículo\ncadastrado]
  
-    E --> G[Cadastro Simples\nVisitante]
-    G --> H([Acesso\nLiberado])
+    G --> I[Intervenção manual\nou cadastro rápido]
+    I --> J[Entrada manual]
  
-    F --> I[Validação Humana\ndo Motorista com\no Veículo]
-    I --> H
-    I --> J([Intervenção\nHumana])
+    H --> K[Autorização automática]
+    K --> L[Entrada ou saída]
+    J --> L
  
     style A fill:#dce8f5,stroke:#aac4e0
     style B fill:#dce8f5,stroke:#aac4e0
     style C fill:#dce8f5,stroke:#aac4e0
-    style D fill:#EDEDED,stroke:#5E5E5E
-    style E fill:#f5dcdc,stroke:#e0aaaa
+    style D fill:#E9E8FF,stroke:#716BFF
+    style E fill:#EDEDED,stroke:#5E5E5E
+    style F fill:#E9E8FF,stroke:#716BFF
     style G fill:#f5dcdc,stroke:#e0aaaa
+    style I fill:#f5dcdc,stroke:#e0aaaa
     style J fill:#f5dcdc,stroke:#e0aaaa
-    style F fill:#dcf5dc,stroke:#aae0aa
-    style I fill:#dcf5dc,stroke:#aae0aa
-    style H fill:#dce8f5,stroke:#aac4e0
+    style H fill:#dcf5dc,stroke:#aae0aa
+    style K fill:#dcf5dc,stroke:#aae0aa
+    style L fill:#dce8f5,stroke:#aac4e0
 ```
 
 ## Fluxo do Usuário
@@ -168,6 +182,35 @@ flowchart LR
 ```
 
 ---
+
+## Fluxo de testes
+
+```mermaid
+flowchart TD
+    A[Alteração no projeto] --> B{Área afetada}
+    B -->|API| C[Node Test Runner\nSupertest]
+    B -->|Vision-worker| D[Pytest]
+    B -->|Frontend| E[Vitest\nVue Test Utils]
+    C --> F[Autenticação, camadas,\nacessos e recuperação]
+    D --> G[Placas, ROI,\ndeduplicação e confiança]
+    E --> H[Feedback e estados da UI]
+    F --> I[Type-check e build]
+    G --> I
+    H --> I
+    I --> J[Build Docker e health checks]
+
+    style A fill:#dce8f5,stroke:#aac4e0
+    style B fill:#E9E8FF,stroke:#716BFF
+    style C fill:#D6FFDD,stroke:#00A83B
+    style D fill:#E9E8FF,stroke:#716BFF
+    style E fill:#FFFDA1,stroke:#FFFD00
+    style I fill:#EDEDED,stroke:#5E5E5E
+    style J fill:#dcf5dc,stroke:#aae0aa
+```
+
+## Documentação da apresentação
+
+O documento [`apresentacao.md`](./apresentacao.md) reúne os objetivos, funcionalidades implementadas, fluxos atualizados, roteiro de demonstração, testes e limitações conhecidas.
 
 ## Equipe
 

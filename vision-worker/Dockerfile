@@ -9,7 +9,7 @@ RUN apt-get update \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY plate_worker.py server.py ./
+COPY plate_worker.py server.py test_plate_worker.py ./
 
 EXPOSE 8000
 CMD ["python", "server.py"]

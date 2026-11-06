@@ -1,5 +1,5 @@
 <template>
-  <div class="w-[71%] shrink-0 flex flex-col gap-[20px] animate-fadeIn">
+  <div class="w-full lg:w-[71%] shrink-0 flex flex-col gap-[20px] animate-fadeIn">
     <div class="flex items-center gap-4">
       <h2 class="text-[22px] font-bold text-[#1E0D01] flex items-center gap-2">
         Controle de Acesso - Cancela
@@ -8,21 +8,27 @@
     </div>
 
     <div
-      class="w-full flex gap-5 bg-white border border-[#FDEEE8] rounded-2xl p-4 shadow-[0px_2px_12px_rgba(0,0,0,0.02)]"
+      class="w-full flex flex-col md:flex-row gap-5 bg-white border border-[#FDEEE8] rounded-2xl p-4 shadow-[0px_2px_12px_rgba(0,0,0,0.02)]"
     >
       <div
-        class="w-[280px] h-[160px] bg-[#1A1C23] rounded-xl relative overflow-hidden flex flex-col items-center justify-center shrink-0"
+        class="w-full md:w-[280px] h-[160px] bg-[#1A1C23] rounded-xl relative overflow-hidden flex flex-col items-center justify-center shrink-0"
       >
         <div class="absolute top-3 left-3 flex items-center gap-2 text-xs font-bold text-white/70">
           <span
             :class="[
               'w-2 h-2 rounded-full',
-              camada === 1 && sseConectado
-                ? 'bg-red-500 animate-pulse'
+              camada === 2
+                ? workerOnline && visionResult
+                  ? 'bg-green-500'
+                  : workerOnline
+                    ? 'bg-yellow-500 animate-pulse'
+                    : 'bg-red-500'
+                : cameraOnline
+                ? 'bg-green-500 animate-pulse'
                 : 'bg-gray-500',
             ]"
           ></span>
-          {{ camada === 2 ? (visionResult ? 'RESULTADO' : 'SEM RESULTADO') : sseConectado ? 'AO VIVO' : 'SEM SINAL' }}
+          {{ camada === 2 ? (workerOnline ? (visionResult ? 'RESULTADO' : 'WORKER AGUARDANDO') : 'WORKER OFFLINE') : cameraStatusLabel }}
         </div>
 
         <div v-if="eventoLPR" class="flex flex-col items-center gap-2 mt-4">
@@ -91,7 +97,7 @@
           <div
             :class="[
               'flex items-center gap-1.5 font-semibold',
-              camada === 1 && sseConectado
+              camada === 2 && workerOnline || (camada === 1 && cameraOnline)
                 ? 'text-green-600'
                 : 'text-red-600',
             ]"
@@ -99,14 +105,14 @@
             <span
               :class="[
                 'w-2 h-2 rounded-full',
-                camada === 1 && sseConectado
+                camada === 2 && workerOnline || (camada === 1 && cameraOnline)
                   ? 'bg-green-500'
                   : 'bg-red-500',
               ]"
             ></span>
-            {{ camada === 2 ? 'Vision worker' : sseConectado ? 'Câmera online' : 'Câmera offline' }}
+            {{ camada === 2 ? (workerOnline ? (visionResult ? 'Resultado recebido' : 'Vision worker aguardando') : 'Vision worker offline') : cameraStatusLabel }}
           </div>
-          <span class="text-gray-400">{{ camada === 2 ? 'Processamento local' : 'SSE - cancela-01' }}</span>
+          <span class="text-gray-400">{{ camada === 2 ? 'Processamento local' : sseConectado ? 'SSE conectado' : 'SSE desconectado' }}</span>
         </div>
 
         <button
@@ -238,6 +244,21 @@
       </div>
 
       <div
+        v-else-if="eventoLPR.status === 'revisao'"
+        class="w-full bg-[#FFF9E8] border border-[#F6D98B] rounded-2xl p-6"
+      >
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 bg-yellow-500 text-white rounded-full flex items-center justify-center font-bold">?</div>
+          <div>
+            <h3 class="font-bold text-yellow-700">Revisão manual necessária</h3>
+            <p class="text-xs text-yellow-700/70">
+              Placa {{ eventoLPR.placa }} abaixo do nível de confiança automática.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div
         v-else-if="eventoLPR.status === 'desconhecido'"
         class="w-full bg-[#FFF5F5] border border-[#FDE2E2] rounded-2xl p-6"
       >
@@ -305,8 +326,11 @@
           <div class="col-span-1 text-right">Hora</div>
         </div>
 
+        <div v-if="carregandoHistorico" class="space-y-2" aria-label="Carregando histórico">
+          <div v-for="linha in 3" :key="linha" class="h-[46px] animate-pulse rounded-xl bg-gray-100"></div>
+        </div>
         <div
-          v-if="historico.length === 0"
+          v-else-if="historico.length === 0"
           class="flex items-center justify-center h-[100px] text-gray-400 text-sm font-medium"
         >
           Nenhum acesso registrado ainda.
@@ -347,6 +371,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { fetchApi } from '../utils/api'
+import { getAuthToken } from '@/utils/authStorage'
+import { notify } from '@/utils/feedback'
 
 const emit = defineEmits(['abrir-cadastro-rapido', 'acesso-registrado'])
 const props = defineProps<{
@@ -364,7 +390,7 @@ const visionResult = computed(() => props.visionResult ?? null)
 
 interface EventoLPR {
   placa: string
-  status: 'conhecido' | 'desconhecido'
+  status: 'conhecido' | 'desconhecido' | 'revisao'
   isSaida?: boolean
   horaStr: string
   veiculo?: { marca: string; modelo: string; cor: string }
@@ -385,6 +411,10 @@ const eventoLPR = ref<EventoLPR | null>(null)
 const filaLPR = ref<EventoLPR[]>([])
 let eventSource: EventSource | null = null
 const sseConectado = ref(false)
+const workerOnline = ref(false)
+let reconexaoTimer: number | null = null
+let tentativasReconexao = 0
+let workerHealthTimer: number | null = null
 
 watch(
   visionResult,
@@ -396,7 +426,11 @@ watch(
 
     eventoLPR.value = {
       placa: resultado.placa_recomendada,
-      status: resultado.status === 'desconhecido' ? 'desconhecido' : 'conhecido',
+      status: resultado.status === 'desconhecido'
+        ? 'desconhecido'
+        : resultado.status === 'revisao'
+          ? 'revisao'
+          : 'conhecido',
       isSaida: resultado.isSaida,
       horaStr: new Date().toLocaleTimeString('pt-BR', {
         hour: '2-digit',
@@ -409,6 +443,7 @@ watch(
 )
 
 const historico = ref<HistoricoItem[]>([])
+const carregandoHistorico = ref(false)
 const placasCadastradas = ref<string[]>([])
 
 const textoStatusCamera = computed(() => {
@@ -419,21 +454,41 @@ const textoStatusCamera = computed(() => {
   return 'aguardando resolução'
 })
 
+const cameraOnline = computed(() => simuladorAtivo.value && sseConectado.value)
+const cameraStatusLabel = computed(() => {
+  if (!simuladorAtivo.value) return 'Robô pausado'
+  return sseConectado.value ? 'Câmera online' : 'SSE desconectado'
+})
+
 watch(camada, (novaCamada, camadaAnterior) => {
   if (novaCamada === camadaAnterior) return
   if (novaCamada === 2) {
+    verificarWorker()
+    workerHealthTimer = window.setInterval(verificarWorker, 15000)
+    if (reconexaoTimer) window.clearTimeout(reconexaoTimer)
     if (eventSource) eventSource.close()
     eventSource = null
     sseConectado.value = false
-    if (simuladorInterval) clearInterval(simuladorInterval)
-    simuladorInterval = null
+    pausarSimuladorRobo()
     eventoLPR.value = null
     filaLPR.value = []
   } else {
+    workerOnline.value = false
+    if (workerHealthTimer) window.clearInterval(workerHealthTimer)
     conectarSSE()
     iniciarSimuladorRobo()
   }
 })
+
+const verificarWorker = async () => {
+  if (camada.value !== 2) return
+  try {
+    const resposta = await fetch(`${import.meta.env.VITE_VISION_WORKER_URL || 'http://localhost:8000'}/health`)
+    workerOnline.value = resposta.ok
+  } catch {
+    workerOnline.value = false
+  }
+}
 
 const formatarPlaca = (placa: string) => {
   if (placa.length === 7) {
@@ -468,6 +523,7 @@ const acaoCadastrarLiberar = () => {
 }
 
 const fetchHistoricoSeguranca = async () => {
+  carregandoHistorico.value = true
   try {
     const res = await fetchApi('/api/users/admin/acessos')
     if (res.ok) {
@@ -489,7 +545,9 @@ const fetchHistoricoSeguranca = async () => {
       })
     }
   } catch (e) {
-    console.error('Erro ao buscar histórico:', e)
+    notify('Não foi possível carregar o histórico de acesso.', 'error')
+  } finally {
+    carregandoHistorico.value = false
   }
 }
 
@@ -514,10 +572,10 @@ const acaoLiberarSemCadastro = async () => {
       resetarLeitura()
       fetchHistoricoSeguranca()
     } else {
-      alert('Erro ao registrar liberação manual.')
+      notify('Erro ao registrar liberação manual.', 'error')
     }
   } catch (e) {
-    console.error(e)
+    notify('Falha de comunicação ao registrar a liberação manual.', 'error')
   }
 }
 
@@ -531,25 +589,50 @@ const carregarPlacasReais = async () => {
     const res = await fetchApi('/api/users/placas-simulacao')
     if (res.ok) placasCadastradas.value = await res.json()
   } catch (e) {
-    console.error('Erro ao carregar placas para simulação', e)
+    notify('Não foi possível carregar as placas para simulação.', 'error')
   }
 }
 
 const conectarSSE = () => {
-  const token = localStorage.getItem('token') || ''
+  if (camada.value !== 1 || eventSource) return
+  const token = getAuthToken() || ''
 
   eventSource = new EventSource(`/api/users/stream?token=${token}`)
 
   eventSource.onopen = () => {
     sseConectado.value = true
+    tentativasReconexao = 0
   }
 
   eventSource.onerror = () => {
     sseConectado.value = false
+    eventSource?.close()
+    eventSource = null
+    if (camada.value !== 1 || reconexaoTimer) return
+    const atraso = Math.min(30000, 1000 * 2 ** tentativasReconexao)
+    tentativasReconexao += 1
+    reconexaoTimer = window.setTimeout(() => {
+      reconexaoTimer = null
+      conectarSSE()
+    }, atraso)
   }
 
   eventSource.onmessage = (event) => {
-    const data = JSON.parse(event.data)
+    let data: {
+      placa: string
+      status: EventoLPR['status']
+      timestamp: string
+      marca?: string
+      modelo?: string
+      cor?: string
+      motorista?: { nome: string; tipo: string }
+    }
+    try {
+      data = JSON.parse(event.data)
+    } catch {
+      notify('A câmera enviou um evento inválido.', 'error')
+      return
+    }
 
     filaLPR.value.push({
       placa: data.placa,
@@ -559,7 +642,7 @@ const conectarSSE = () => {
         minute: '2-digit',
         second: '2-digit',
       }),
-      veiculo: { marca: data.marca, modelo: data.modelo, cor: data.cor },
+      veiculo: { marca: data.marca ?? '', modelo: data.modelo ?? '', cor: data.cor ?? '' },
       usuario: data.motorista
         ? { nome: data.motorista.nome, tipo: data.motorista.tipo }
         : undefined,
@@ -608,8 +691,11 @@ const gerarCarroAleatorio = () => {
 }
 
 let simuladorInterval: any = null
+const simuladorAtivo = ref(false)
 
 const iniciarSimuladorRobo = () => {
+  if (simuladorInterval || camada.value !== 1) return
+
   simuladorInterval = setInterval(() => {
     if (filaLPR.value.length < 2 && !eventoLPR.value) {
       let placaAlvo = gerarPlacaAleatoria()
@@ -640,9 +726,24 @@ const iniciarSimuladorRobo = () => {
           modelo: carroMock.modelo,
           cor: carroMock.cor,
         }),
-      }).catch((e) => console.error('Falha ao simular LPR:', e))
+      }).catch(() => notify('Falha ao simular a leitura da placa.', 'error'))
     }
   }, 10000)
+  simuladorAtivo.value = true
+}
+
+const pausarSimuladorRobo = () => {
+  if (simuladorInterval) clearInterval(simuladorInterval)
+  simuladorInterval = null
+  simuladorAtivo.value = false
+}
+
+const alternarSimuladorRobo = () => {
+  if (simuladorAtivo.value) {
+    pausarSimuladorRobo()
+  } else {
+    iniciarSimuladorRobo()
+  }
 }
 
 onMounted(() => {
@@ -651,6 +752,9 @@ onMounted(() => {
     carregarPlacasReais()
     conectarSSE()
     iniciarSimuladorRobo()
+  } else {
+    verificarWorker()
+    workerHealthTimer = window.setInterval(verificarWorker, 15000)
   }
 })
 
@@ -659,12 +763,16 @@ onUnmounted(() => {
     eventSource.close()
     sseConectado.value = false
   }
-  if (simuladorInterval) clearInterval(simuladorInterval)
+  if (reconexaoTimer) window.clearTimeout(reconexaoTimer)
+  if (workerHealthTimer) window.clearInterval(workerHealthTimer)
+  pausarSimuladorRobo()
 })
 
 defineExpose({
   resetarLeitura,
   fetchHistoricoSeguranca,
+  alternarSimuladorRobo,
+  simuladorAtivo,
 })
 </script>
 

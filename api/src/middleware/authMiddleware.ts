@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 export interface AuthRequest extends Request {
-  user?: any;
+  user?: { id?: string; tipo?: string };
 }
 
 const CHAVE_MESTRA = process.env.JWT_SECRET || 'chave_mestra_carcara_2026';
@@ -23,11 +23,14 @@ export const verificarToken = (req: AuthRequest, res: Response, next: NextFuncti
   }
 
   try {
-    const decoded = jwt.verify(token, CHAVE_MESTRA); 
-    req.user = decoded; 
+    const decoded = jwt.verify(token, CHAVE_MESTRA);
+    if (typeof decoded === "string") {
+      res.status(403).json({ erro: 'Token inválido ou expirado.' });
+      return;
+    }
+    req.user = { id: typeof decoded.id === "string" ? decoded.id : undefined, tipo: typeof decoded.tipo === "string" ? decoded.tipo : undefined };
     next(); 
-  } catch (error: any) {
-    console.error("Erro ao abrir Token no Middleware:", error.message);
+  } catch {
     res.status(403).json({ erro: 'Token inválido ou expirado.' });
   }
 };

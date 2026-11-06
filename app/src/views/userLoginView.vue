@@ -80,6 +80,8 @@
 
         <div
           v-if="mensagem"
+          role="status"
+          aria-live="polite"
           :class="[
             'p-4 rounded-lg text-center font-bold text-sm border transition-all my-4 w-full',
             tipoAlerta === 'sucesso'
@@ -115,11 +117,19 @@
             <input
               id="password"
               v-model="loginForm.password"
-              type="password"
+              :type="mostrarSenha ? 'text' : 'password'"
               placeholder="••••••••"
               class="w-full bg-white text-carcara-marrom placeholder:text-gray-400 rounded-lg py-3 px-4 text-base outline-none focus:ring-2 focus:ring-white/50 transition-all"
               required
             />
+            <button
+              type="button"
+              class="mt-1 text-xs text-white underline"
+              :aria-label="mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'"
+              @click="mostrarSenha = !mostrarSenha"
+            >
+              {{ mostrarSenha ? 'Ocultar senha' : 'Mostrar senha' }}
+            </button>
           </div>
 
           <div class="auth-consent w-full flex justify-between items-center text-sm mt-1">
@@ -217,7 +227,7 @@
                 {{ carregando ? 'Enviando...' : 'Enviar link' }}
               </button>
             </form>
-            <p v-if="mensagemRecuperacao" class="mt-4 text-sm text-carcara-marrom">
+            <p v-if="mensagemRecuperacao" role="status" aria-live="polite" class="mt-4 text-sm text-carcara-marrom">
               {{ mensagemRecuperacao }}
             </p>
           </div>
@@ -254,6 +264,7 @@ import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { runViewTransition } from '@/utils/viewTransition'
 import { saveAuth } from '@/utils/authStorage'
+import { notify } from '@/utils/feedback'
 
 const router = useRouter()
 
@@ -281,6 +292,7 @@ const aplicarMascaraCpf = (event: Event) => {
 const mensagem = ref('')
 const tipoAlerta = ref('')
 const carregando = ref(false)
+const mostrarSenha = ref(false)
 
 const promptCpfVinculo = ref(false)
 const tokenTemporario = ref('')
@@ -320,7 +332,7 @@ const handleLogin = async () => {
       tipoAlerta.value = 'erro'
     }
   } catch (err: unknown) {
-    mensagem.value = `Erro ao conectar ao servidor. ${err}`
+    mensagem.value = 'Erro ao conectar ao servidor. Verifique sua conexão.'
     tipoAlerta.value = 'erro'
   } finally {
     carregando.value = false
@@ -395,7 +407,7 @@ onMounted(() => {
           cancel_on_tap_outside: true,
         })
       } catch (err) {
-        console.error('Erro ao inicializar Google Auth no Login:', err)
+        notify('Não foi possível inicializar o login com Google.', 'error')
       }
     }
   }
@@ -409,7 +421,8 @@ const loginComGoogle = () => {
     // @ts-expect-error : O método 'prompt' não está definido no objeto 'id' do 'google.accounts'
     google.accounts.id.prompt()
   } else {
-    alert('SDK do Google não carregado. Verifique os scripts do index.html.')
+    mensagem.value = 'O login com Google está indisponível no momento.'
+    tipoAlerta.value = 'erro'
   }
 }
 
@@ -443,7 +456,8 @@ const solicitarRecuperacao = async () => {
 
 const concluirVinculoGoogle = async () => {
   if (!loginForm.cpf) {
-    alert('Por favor, digite o seu CPF para finalizar o vínculo.')
+    mensagem.value = 'Digite o seu CPF para finalizar o vínculo.'
+    tipoAlerta.value = 'erro'
     return
   }
 

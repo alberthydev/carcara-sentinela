@@ -14,6 +14,7 @@ import { verificarToken } from "../middleware/authMiddleware";
 import { requerCamadaLpr, requerCamadaVisao } from "../middleware/camadaMiddleware";
 import { receberResultadoVisao } from "../controllers/visaoController";
 import { requerUsuarioDev } from "../middleware/devMiddleware";
+import { requerPapel, requerPropriaVisita, requerProprioUsuario } from "../middleware/authorizationMiddleware";
 
 const router = Router();
 
@@ -25,6 +26,9 @@ const authLimiter = rateLimit({
   message: { erro: "Muitas tentativas de login. Tente novamente em alguns minutos." },
 });
 
+router.get("/health", (_req, res) => {
+  res.json({ status: "ok", servico: "users" });
+});
 router.post("/login", authLimiter, loginUser);
 router.post("/cadastro", registryUser);
 router.post("/auth/google", authLimiter, googleAuth);
@@ -51,40 +55,40 @@ router.post("/evento", requerCamadaLpr, simularLeituraLPR);
 router.get("/placas-simulacao", requerCamadaLpr, getPlacasParaSimulacao);
 
 // --- Perfil ---
-router.put("/:id/perfil", atualizarPerfilProprio);
+router.put("/:id/perfil", requerProprioUsuario, atualizarPerfilProprio);
 
 // --- Admin ---
-router.get("/admin/acessos", getTodosAcessos);
-router.get("/admin/vagas-ocupadas", getVagasOcupadas);
-router.get("/admin/usuarios", getAllUsersAdmin);
-router.post("/admin/acesso-manual", registroManual);
-router.post("/admin/cadastro-rapido", cadastroRapidoPortaria);
-router.put("/admin/usuarios/:id", updateUserAdmin);
+router.get("/admin/acessos", requerPapel("admin", "seguranca", "dev"), getTodosAcessos);
+router.get("/admin/vagas-ocupadas", requerPapel("admin", "seguranca", "dev"), getVagasOcupadas);
+router.get("/admin/usuarios", requerPapel("admin", "dev"), getAllUsersAdmin);
+router.post("/admin/acesso-manual", requerPapel("admin", "seguranca", "dev"), registroManual);
+router.post("/admin/cadastro-rapido", requerPapel("admin", "seguranca", "dev"), cadastroRapidoPortaria);
+router.put("/admin/usuarios/:id", requerPapel("admin", "dev"), updateUserAdmin);
 
 // --- Configurações Gerais ---
 router.get("/configuracao", getConfiguracao);
-router.put("/configuracao", updateConfiguracao);
+router.put("/configuracao", requerPapel("admin", "dev"), updateConfiguracao);
 router.put("/configuracao/camada", requerUsuarioDev, updateCamada);
 
 // --- Escala ---
-router.get("/escala", getEscalas);
-router.get("/escala/ativa", getEscalaAtiva);
-router.post("/escala", createEscala);
-router.put("/escala/:id", updateEscala);
+router.get("/escala", requerPapel("admin", "dev"), getEscalas);
+router.get("/escala/ativa", requerPapel("admin", "seguranca", "dev"), getEscalaAtiva);
+router.post("/escala", requerPapel("admin", "dev"), createEscala);
+router.put("/escala/:id", requerPapel("admin", "dev"), updateEscala);
 
 // --- Veículos (Meus Veículos) ---
-router.post("/:id/veiculos", adicionarVeiculo);
-router.get("/:id/veiculos", getVeiculos);
-router.delete("/:id/veiculos/:placa", removerVeiculo);
-router.put("/:id/veiculos/:placa", editarVeiculo);
+router.post("/:id/veiculos", requerProprioUsuario, adicionarVeiculo);
+router.get("/:id/veiculos", requerProprioUsuario, getVeiculos);
+router.delete("/:id/veiculos/:placa", requerProprioUsuario, removerVeiculo);
+router.put("/:id/veiculos/:placa", requerProprioUsuario, editarVeiculo);
 
 // --- Visitas (Agendamentos) ---
-router.post("/:id/visitas", agendarVisita);
-router.get("/:id/visitas", getVisitasUsuario);
-router.put("/visitas/:visitaId/inativar", inativarVisita);
-router.put("/visitas/:visitaId", editarVisita);
+router.post("/:id/visitas", requerProprioUsuario, agendarVisita);
+router.get("/:id/visitas", requerProprioUsuario, getVisitasUsuario);
+router.put("/visitas/:visitaId/inativar", requerPropriaVisita, inativarVisita);
+router.put("/visitas/:visitaId", requerPropriaVisita, editarVisita);
 
 // --- Histórico Pessoal ---
-router.get("/:id/acessos", getHistoricoAcessos);
+router.get("/:id/acessos", requerProprioUsuario, getHistoricoAcessos);
 
 export default router;

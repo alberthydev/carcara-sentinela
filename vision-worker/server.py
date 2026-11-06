@@ -1,10 +1,15 @@
 import json
 import os
+import re
 import tempfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from plate_worker import process_video
+
+
+def rtsp_enabled() -> bool:
+    return os.getenv("VISION_RTSP_ENABLED", "false").lower() == "true"
 
 
 class VisionHandler(BaseHTTPRequestHandler):
@@ -25,7 +30,48 @@ class VisionHandler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Video-Name")
         self.end_headers()
 
+    def do_GET(self) -> None:
+        if self.path == "/health":
+            self._respond(200, {"status": "ok", "servico": "vision-worker"})
+            return
+        if self.path == "/rtsp/status":
+            self._respond(200, {
+                "status": "enabled" if rtsp_enabled() else "disabled",
+                "servico": "vision-worker",
+                "recurso": "rtsp",
+            })
+            return
+        self._respond(404, {"erro": "Endpoint não encontrado."})
+
     def do_POST(self) -> None:
+        if self.path == "/rtsp/connect":
+            if not rtsp_enabled():
+                self._respond(503, {"erro": "A integração RTSP está desativada."})
+                return
+            try:
+                body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))))
+                url = body.get("url", "")
+                if not isinstance(url, str) or not re.match(r"^rtsps?://", url):
+                    self._respond(400, {"erro": "Informe uma URL RTSP válida."})
+                    return
+                import cv2
+
+                capture = cv2.VideoCapture(url)
+                conectado = capture.isOpened()
+                if conectado:
+                    conectado, _ = capture.read()
+                capture.release()
+                self._respond(
+                    200 if conectado else 502,
+                    {"status": "connected" if conectado else "unavailable"},
+                )
+            except (ValueError, json.JSONDecodeError):
+                self._respond(400, {"erro": "JSON inválido para conexão RTSP."})
+            except Exception as error:
+                print(f"Erro ao conectar à câmera RTSP: {error}")
+                self._respond(502, {"erro": "Não foi possível conectar à câmera RTSP."})
+            return
+
         if self.path != "/process":
             self._respond(404, {"erro": "Endpoint não encontrado."})
             return

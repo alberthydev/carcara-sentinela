@@ -30,7 +30,14 @@
         </div>
 
         <div
-          v-if="historicoGeral.length === 0"
+          v-if="carregando"
+          class="space-y-2"
+          aria-label="Carregando histórico"
+        >
+          <div v-for="linha in 4" :key="linha" class="h-10 animate-pulse rounded-full bg-gray-100"></div>
+        </div>
+        <div
+          v-else-if="historicoGeral.length === 0"
           class="flex flex-col items-center justify-center h-[100px] text-gray-400 text-sm font-medium gap-2"
         >
           <svg
@@ -79,6 +86,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { fetchApi } from '../utils/api'
+import { notify } from '../utils/feedback'
 
 interface RegistroAdmin {
   _id: string
@@ -90,15 +98,19 @@ interface RegistroAdmin {
 }
 
 const historicoGeral = ref<RegistroAdmin[]>([])
+const carregando = ref(false)
 
 const fetchHistoricoGeral = async () => {
+  carregando.value = true
   try {
     const res = await fetchApi('/api/users/admin/acessos')
     if (res.ok) {
       historicoGeral.value = await res.json()
     }
   } catch (e) {
-    console.error('Erro ao buscar histórico do admin:', e)
+    notify('Não foi possível carregar o histórico de acessos.', 'error')
+  } finally {
+    carregando.value = false
   }
 }
 

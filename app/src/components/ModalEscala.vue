@@ -23,7 +23,13 @@
               <div class="text-center">Editar</div>
             </div>
             
-            <div v-for="(item, index) in escala" :key="item._id || index" :class="['grid grid-cols-[1.5fr_0.8fr_1.5fr_1.5fr_0.5fr] px-4 h-[44px] rounded-full text-[13px] items-center font-medium text-[#1E0D01] transition-colors', index % 2 !== 0 ? 'bg-white hover:bg-gray-50' : 'bg-[#FFF5F0] hover:bg-[#FDEEE8]']">
+            <div v-if="carregandoLista" class="space-y-2">
+              <div v-for="item in 4" :key="item" class="h-11 animate-pulse rounded-full bg-gray-100"></div>
+            </div>
+            <div v-else-if="escala.length === 0" class="py-8 text-center text-sm text-gray-400">
+              Nenhuma escala cadastrada.
+            </div>
+            <div v-for="(item, index) in escala" v-else :key="item._id || index" :class="['grid grid-cols-[1.5fr_0.8fr_1.5fr_1.5fr_0.5fr] px-4 h-[44px] rounded-full text-[13px] items-center font-medium text-[#1E0D01] transition-colors', index % 2 !== 0 ? 'bg-white hover:bg-gray-50' : 'bg-[#FFF5F0] hover:bg-[#FDEEE8]']">
               <div class="truncate pr-2">{{ item.nome }}</div>
               <div>{{ item.turno }}</div>
               <div class="truncate pr-2">{{ Array.isArray(item.dias) ? item.dias.join(', ') : item.dias }}</div>
@@ -94,7 +100,9 @@
         
           <div class="flex items-center justify-center gap-4 mt-4 pt-4 border-t border-gray-100">
             <button type="button" @click="voltarParaLista" class="w-[140px] h-[44px] border border-[#F79347] text-[#F79347] font-semibold rounded-full text-sm hover:bg-[#FDEEE8] transition-colors cursor-pointer">Voltar</button>
-            <button type="submit" class="w-[140px] h-[44px] bg-gradient-to-r from-[#FD7917] to-[#F79347] text-white font-semibold rounded-full text-sm shadow-md hover:opacity-95 transition-all cursor-pointer">Salvar</button>
+            <button type="submit" :disabled="carregandoSalvamento" class="w-[140px] h-[44px] bg-gradient-to-r from-[#FD7917] to-[#F79347] text-white font-semibold rounded-full text-sm shadow-md hover:opacity-95 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-60">
+              {{ carregandoSalvamento ? 'Salvando...' : 'Salvar' }}
+            </button>
           </div>
         </form>        
 
@@ -106,6 +114,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { fetchApi } from '../utils/api'
+import { notify } from '../utils/feedback'
 
 const props = defineProps<{ isOpen: boolean }>()
 const emit = defineEmits(['close'])
@@ -133,13 +142,18 @@ const form = ref<EscalaItem>({
 
 
 const escala = ref<EscalaItem[]>([])
+const carregandoLista = ref(false)
+const carregandoSalvamento = ref(false)
 
 const buscarEscala = async () => {
+  carregandoLista.value = true
   try {
     const res = await fetchApi('/api/users/escala')
     escala.value = await res.json()
   } catch (e) {
-    console.error("Erro ao buscar escala:", e)
+    notify('Não foi possível carregar a escala.', 'error')
+  } finally {
+    carregandoLista.value = false
   }
 }
 
@@ -188,6 +202,7 @@ const aplicarMascaraHora = (event: Event, campo: 'horaInicio' | 'horaFim') => {
 }
 
 const salvarEscala = async () => {
+  carregandoSalvamento.value = true
   try {
     let res;
 
@@ -208,7 +223,7 @@ const salvarEscala = async () => {
     if (res && !res.ok) {
       const erroData = await res.json().catch(() => ({}));
       
-      alert(erroData.erro || 'Erro ao salvar a escala. Verifique se há conflito de horários.');
+      notify(erroData.erro || 'Erro ao salvar a escala. Verifique se há conflito de horários.', 'error');
       return; 
     }
     houveAlteracao.value = true
@@ -216,8 +231,8 @@ const salvarEscala = async () => {
     await buscarEscala()
     voltarParaLista()
   } catch (e) {
-    console.error("Erro ao salvar escala no banco:", e)
-    alert("Falha de conexão. O servidor está rodando?")
+    notify("Falha de conexão. O servidor está rodando?", 'error')
+    carregandoSalvamento.value = false
   }
 }
 

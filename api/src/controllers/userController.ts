@@ -109,7 +109,16 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
 export const registryUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const { cpf, matricula, senha, nome, sobrenome, fotoUrl, carros, tipo, email } = req.body;
-    if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    if (
+      typeof cpf !== "string" ||
+      typeof nome !== "string" ||
+      typeof sobrenome !== "string" ||
+      typeof senha !== "string" ||
+      typeof tipo !== "string" ||
+      !["visitante", "aluno", "servidor"].includes(tipo) ||
+      typeof email !== "string" ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+    ) {
       res.status(400).json({ erro: "Informe um e-mail válido." });
       return;
     }
@@ -120,8 +129,8 @@ export const registryUser = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const regexFoto = /\.(png|jpg|jpeg)$/i;
-    if (!regexFoto.test(fotoUrl)) {
+    const regexFoto = /\.(png|jpg|jpeg)(\?.*)?$/i;
+    if (typeof fotoUrl !== "string" || !regexFoto.test(fotoUrl)) {
       res.status(400).json({ erro: "A foto deve estar no formato PNG, JPG ou JPEG." });
       return;
     }
@@ -311,6 +320,11 @@ export const atualizarPerfilProprio = async (req: Request, res: Response): Promi
     if (sobrenome) user.sobrenome = sobrenome;
     
     if (password) {
+      const regexSenha = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      if (typeof password !== "string" || !regexSenha.test(password)) {
+        res.status(400).json({ erro: "A nova senha não atende aos requisitos mínimos de segurança." });
+        return;
+      }
       const salt = await bcrypt.genSalt(10);
       user.senha = await bcrypt.hash(password, salt);
     }

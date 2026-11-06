@@ -90,6 +90,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { fetchApi } from '../utils/api'
+import { notify } from '../utils/feedback'
 
 const props = defineProps<{ isOpen: boolean; usuarioLogado: any }>()
 const emit = defineEmits(['close', 'atualizar'])
@@ -133,16 +134,15 @@ const salvarEdicao = async () => {
 
     if (res.ok) {
       const data = await res.json()
-      alert("Perfil atualizado com sucesso!")
+      notify("Perfil atualizado com sucesso!", 'success')
       emit('atualizar', data.usuario)
       isEditing.value = false
       emit('close')
     } else {
-      alert("Erro ao atualizar o perfil.")
+      notify("Erro ao atualizar o perfil.", 'error')
     }
   } catch (e) {
-    console.error(e)
-    alert("Falha na comunicação com o servidor.")
+    notify("Falha na comunicação com o servidor.", 'error')
   } finally {
     carregando.value = false
   }

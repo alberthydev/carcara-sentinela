@@ -1,23 +1,24 @@
-import { clearAuth, getAuthToken } from './authStorage';
+import { clearAuth, getAuthToken } from './authStorage'
 
 export const fetchApi = async (url: string, options: RequestInit = {}) => {
-  const token = getAuthToken();
-  
-  const tokenValido = token && token !== 'undefined' && token !== 'null';
+  const token = getAuthToken()
+  const headers = new Headers(options.headers)
 
-  const headers = {
-    'Content-Type': 'application/json',
-    ...options.headers,
-    ...(tokenValido ? { 'Authorization': `Bearer ${token}` } : {})
-  };
-
-  const response = await fetch(url, { ...options, headers });
-
-  if (response.status === 401) {
-    alert("Sua sessão é inválida ou expirou. Faça login novamente.");
-    clearAuth();
-    window.location.href = '/login'; 
+  if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json')
+  }
+  if (token && token !== 'undefined' && token !== 'null') {
+    headers.set('Authorization', `Bearer ${token}`)
   }
 
-  return response;
+  const response = await fetch(url, { ...options, headers })
+
+  if (response.status === 401) {
+    clearAuth()
+    if (window.location.pathname !== '/login') {
+      window.location.assign('/login')
+    }
+  }
+
+  return response
 }

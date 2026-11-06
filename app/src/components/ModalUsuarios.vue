@@ -24,7 +24,13 @@
               <div class="col-span-1 text-center">Status</div>
             </div>
             
-            <div v-for="(user, index) in usuarios" :key="index" :class="['grid grid-cols-5 px-4 h-[44px] rounded-full text-[13px] items-center font-medium text-[#1E0D01] transition-colors', index % 2 !== 0 ? 'bg-[#FFF5F0]' : 'bg-white hover:bg-gray-50']">
+            <div v-if="carregandoLista" class="space-y-2">
+              <div v-for="item in 5" :key="item" class="h-11 animate-pulse rounded-full bg-gray-100"></div>
+            </div>
+            <div v-else-if="usuarios.length === 0" class="py-8 text-center text-sm text-gray-400">
+              Nenhum usuário encontrado.
+            </div>
+            <div v-for="(user, index) in usuarios" v-else :key="index" :class="['grid grid-cols-5 px-4 h-[44px] rounded-full text-[13px] items-center font-medium text-[#1E0D01] transition-colors', index % 2 !== 0 ? 'bg-[#FFF5F0]' : 'bg-white hover:bg-gray-50']">
               <div class="col-span-2 truncate pr-2" :class="{'text-gray-400 line-through': !user.ativo}">
                 {{ user.nome }} {{ user.sobrenome }}
               </div>
@@ -101,12 +107,14 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { fetchApi } from '../utils/api'
+import { notify } from '../utils/feedback'
 
 const props = defineProps<{ isOpen: boolean }>()
 const emit = defineEmits(['close'])
 
 const modo = ref<'lista' | 'cadastro' | 'edicao'>('lista')
 const carregando = ref(false)
+const carregandoLista = ref(false)
 
 interface Usuario {
   _id: string;
@@ -131,13 +139,16 @@ const form = ref({
 const usuarios = ref<Usuario[]>([])
 
 const buscarUsuarios = async () => {
+  carregandoLista.value = true
   try {
     const res = await fetchApi('/api/users/admin/usuarios')
     if (res.ok) {
       usuarios.value = await res.json()
     }
   } catch (error) {
-    console.error('Erro ao buscar usuários:', error)
+    notify('Não foi possível carregar os usuários.', 'error')
+  } finally {
+    carregandoLista.value = false
   }
 }
 
@@ -173,7 +184,7 @@ const alternarStatus = async (user: Usuario) => {
       body: JSON.stringify({ ativo: novoStatus })
     })
   } catch (error) {
-    console.error('Erro ao alterar status:', error)
+    notify('Não foi possível alterar o status do usuário.', 'error')
     user.ativo = !novoStatus; 
   }
 }
@@ -209,7 +220,7 @@ const salvarUsuario = async () => {
     await buscarUsuarios()
     voltarParaLista()
   } catch (error) {
-    console.error('Erro ao salvar usuário:', error)
+    notify('Não foi possível salvar o usuário.', 'error')
   } finally {
     carregando.value = false;
   }

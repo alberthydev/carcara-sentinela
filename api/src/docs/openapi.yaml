@@ -2,7 +2,13 @@ openapi: 3.0.0
 info:
   title: API Carcará Sentinela
   version: 1.0.0
-  description: API de controle de acesso e monitoramento.
+  description: |
+    API de controle de acesso e monitoramento.
+
+    Rotas protegidas exigem `Authorization: Bearer <JWT>`. Respostas `401`
+    indicam autenticação ausente ou inválida; `403` indica camada ou papel
+    insuficiente; `404` indica recurso inexistente; e `429` indica limite de
+    tentativas excedido nas operações de autenticação e recuperação de senha.
 
 components:
   schemas:
@@ -26,6 +32,41 @@ components:
               marca: { type: string }
               modelo: { type: string }
               cor: { type: string }
+
+    CadastroUsuario:
+      type: object
+      required: [cpf, nome, sobrenome, email, senha, tipo, fotoUrl]
+      properties:
+        cpf: { type: string, example: '111.222.333-44' }
+        matricula: { type: string }
+        nome: { type: string }
+        sobrenome: { type: string }
+        email: { type: string, format: email }
+        senha:
+          type: string
+          format: password
+          description: 'Mínimo de 8 caracteres, com maiúscula, minúscula, número e símbolo.'
+        tipo: { type: string, enum: [visitante, aluno, servidor] }
+        fotoUrl: { type: string, format: uri }
+        carros:
+          type: array
+          items: { $ref: '#/components/schemas/User/properties/carros/items' }
+
+    SolicitarRecuperacaoSenha:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, format: email }
+
+    RedefinirSenha:
+      type: object
+      required: [token, password]
+      properties:
+        token: { type: string }
+        password:
+          type: string
+          format: password
+          description: 'Mínimo de 8 caracteres, com maiúscula, minúscula, número e símbolo.'
 
     Visita:
       type: object
@@ -90,8 +131,72 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+  responses:
+    Unauthorized:
+      description: Autenticação ausente ou token inválido
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              erro: { type: string, example: Não autorizado }
+    Forbidden:
+      description: Usuário sem papel, propriedade ou camada necessária
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              erro: { type: string, example: Acesso não autorizado }
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              erro: { type: string, example: Recurso não encontrado }
+    TooManyRequests:
+      description: Limite de tentativas excedido
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              erro: { type: string, example: Muitas tentativas. Tente novamente mais tarde. }
 
 paths:
+  /health:
+    get:
+      summary: Verificar disponibilidade da API
+      tags: [Operação]
+      responses:
+        '200':
+          description: Serviço disponível
+  /version:
+    get:
+      summary: Consultar versão e build da API
+      tags: [Operação]
+      responses:
+        '200':
+          description: Identificação da versão em execução
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  servico: { type: string, example: api }
+                  versao: { type: string, example: 1.0.0 }
+                  build: { type: string, example: compose }
+  /health/ready:
+    get:
+      summary: Verificar dependências da API
+      tags: [Operação]
+      responses:
+        '200':
+          description: API pronta e MongoDB conectado
+        '503':
+          description: Dependência indisponível
   # ================= AUTH & PÚBLICAS =================
   /login:
     post:
@@ -164,7 +269,7 @@ paths:
       requestBody:
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/User' }
+            schema: { $ref: '#/components/schemas/CadastroUsuario' }
       responses:
         '201':
           description: 'Usuário cadastrado com sucesso'
@@ -175,7 +280,7 @@ paths:
                 properties:
                   mensagem: { type: string }
         '400':
-          description: 'Erro de validação (senha fraca, foto inválida ou CPF já cadastrado)'
+          description: 'Erro de validação (e-mail inválido/duplicado, senha fraca, foto inválida ou CPF já cadastrado)'
           content:
             application/json:
               schema:
@@ -190,6 +295,66 @@ paths:
                 type: object
                 properties:
                   erro: { type: string }
+
+  /senha/recuperar:
+    post:
+      summary: Solicitar recuperação de senha
+      description: Envia um link de redefinição para o e-mail cadastrado. O token expira em 30 minutos e só pode ser usado uma vez.
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SolicitarRecuperacaoSenha' }
+      responses:
+        '200':
+          description: Link de recuperação enviado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem: { type: string }
+        '400':
+          description: E-mail ausente ou inválido
+          content:
+            application/json:
+              schema: { type: object, properties: { erro: { type: string } } }
+        '404':
+          description: Nenhuma conta encontrada para o e-mail informado
+          content:
+            application/json:
+              schema: { type: object, properties: { erro: { type: string } } }
+        '429':
+          description: Muitas tentativas de recuperação
+        '502':
+          description: Falha no envio do e-mail
+        '503':
+          description: Serviço SMTP não configurado
+
+  /senha/redefinir:
+    post:
+      summary: Redefinir senha com token
+      description: Valida o token recebido por e-mail e define uma nova senha. O token é invalidado após o uso.
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RedefinirSenha' }
+      responses:
+        '200':
+          description: Senha redefinida com sucesso
+          content:
+            application/json:
+              schema: { type: object, properties: { mensagem: { type: string } } }
+        '400':
+          description: Token inválido/expirado ou senha fora dos requisitos
+          content:
+            application/json:
+              schema: { type: object, properties: { erro: { type: string } } }
+        '429':
+          description: Muitas tentativas de redefinição
 
   /auth/google:
     post:
@@ -526,6 +691,45 @@ paths:
                 type: object
                 properties:
                   erro: { type: string }
+
+  /admin/cadastro-rapido:
+    post:
+      summary: Cadastrar veículo e liberar acesso rapidamente
+      tags: [Admin]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cpf, placa, marca, modelo, cor]
+              properties:
+                cpf: { type: string }
+                placa: { type: string }
+                marca: { type: string }
+                modelo: { type: string }
+                cor: { type: string }
+      responses:
+        '200':
+          description: Cadastro realizado e acesso liberado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem: { type: string }
+                  usuario: { $ref: '#/components/schemas/User' }
+        '400':
+          description: Dados obrigatórios inválidos
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          description: Erro interno ao realizar o cadastro rápido
 
   # ================= CONFIGURAÇÕES E ESCALA =================
   /configuracao:

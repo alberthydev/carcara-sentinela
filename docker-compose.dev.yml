@@ -5,6 +5,11 @@ services:
       - "27017:27017"
     volumes:
       - mongo_dev_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   api:
     image: node:22-alpine
@@ -18,8 +23,17 @@ services:
       - PORT=3000
       - MONGO_URI=mongodb://banco_dados:27017/carcara_db_dev
       - NODE_ENV=development
+      - API_VERSION=1.0.0
+      - API_BUILD=compose-dev
+      - CORS_ORIGIN=http://localhost:5173,http://127.0.0.1:5173
     depends_on:
-      - banco_dados
+      banco_dados:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     command: sh -c "npm install --include=dev && npm run dev"
 
   vision_worker:
@@ -30,6 +44,12 @@ services:
     environment:
       - VISION_PORT=8000
       - CORS_ORIGIN=http://localhost:5173
+      - VISION_RTSP_ENABLED=false
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   app:
     image: node:20-alpine
@@ -42,7 +62,10 @@ services:
     environment:
       - CHOKIDAR_USEPOLLING=true
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+      vision_worker:
+        condition: service_healthy
     command: sh -c "npm install && ./node_modules/.bin/vite --host 0.0.0.0"
 
 volumes:

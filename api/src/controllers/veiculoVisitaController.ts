@@ -3,13 +3,31 @@ import User from "../models/User";
 import Visita from "../models/Visita";
 import RegistroAcesso from "../models/RegistroAcesso";
 
+const lerVeiculo = (body: Record<string, unknown>) => {
+  const placa = typeof body.placa === "string" ? body.placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, "") : "";
+  const campos = ["marca", "modelo", "cor"];
+  if (!/^[A-Z0-9]{6,8}$/.test(placa) || campos.some((campo) => typeof body[campo] !== "string" || !String(body[campo]).trim())) {
+    return null;
+  }
+  return {
+    placa,
+    marca: String(body.marca).trim(),
+    modelo: String(body.modelo).trim(),
+    cor: String(body.cor).trim(),
+  };
+};
+
 export const adicionarVeiculo = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const novoVeiculo = req.body;
+    const novoVeiculo = lerVeiculo(req.body);
+    if (!novoVeiculo) {
+      res.status(400).json({ erro: "Informe placa, marca, modelo e cor válidos." });
+      return;
+    }
 
     const user = await User.findById(id);
     if (!user) {
@@ -17,7 +35,8 @@ export const adicionarVeiculo = async (
       return;
     }
 
-    user.carros?.push(novoVeiculo);
+    if (!user.carros) user.carros = [];
+    user.carros.push({ ...novoVeiculo, ano: 0 });
     await user.save();
 
     res
@@ -35,7 +54,11 @@ export const getVeiculos = async (
 ): Promise<void> => {
   try {
     const user = await User.findById(req.params.id);
-    res.status(200).json(user?.carros || []);
+    if (!user) {
+      res.status(404).json({ erro: "Usuário não encontrado." });
+      return;
+    }
+    res.status(200).json(user.carros || []);
   } catch (erro) {
     res.status(500).json({ erro: "Erro ao buscar veículos." });
   }
@@ -47,13 +70,24 @@ export const agendarVisita = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const { dataVisita, horaVisita, placa, marca, modelo, cor } = req.body;
+    const { dataVisita, horaVisita } = req.body;
+    const veiculo = lerVeiculo(req.body);
+    if (
+      typeof dataVisita !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(dataVisita) ||
+      typeof horaVisita !== "string" ||
+      !/^\d{2}:\d{2}$/.test(horaVisita) ||
+      !veiculo
+    ) {
+      res.status(400).json({ erro: "Informe data, horário e dados válidos do veículo." });
+      return;
+    }
 
     const novaVisita = await Visita.create({
       usuarioId: id,
       dataVisita,
       horaVisita,
-      veiculo: { placa, marca, modelo, cor },
+      veiculo,
     });
 
     res.status(201).json({ mensagem: "Visita agendada!", visita: novaVisita });
@@ -106,9 +140,7 @@ export const getTodosAcessos = async (
         let usuarioObj: any = null;
 
         if (acesso.usuarioId) {
-          try {
-            usuarioObj = await User.findById(acesso.usuarioId).lean();
-          } catch (err) {}
+          usuarioObj = await User.findById(acesso.usuarioId).lean();
         }
 
         if (acesso.marca && acesso.marca !== "Desconhecida") {
@@ -156,6 +188,13 @@ export const registroManual = async (
   try {
     const { placa, marca, modelo, cor, nomeMotorista, tipoMotorista } =
       req.body;
+    const placaNormalizada = typeof placa === "string"
+      ? placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, "")
+      : "";
+    if (!/^[A-Z0-9]{6,8}$/.test(placaNormalizada)) {
+      res.status(400).json({ erro: "Informe uma placa válida." });
+      return;
+    }
 
     const dataHoje = new Intl.DateTimeFormat("pt-BR", {
       timeZone: "America/Sao_Paulo",
@@ -168,7 +207,7 @@ export const registroManual = async (
     }).format(new Date());
 
     const registroAberto = await RegistroAcesso.findOne({
-      placa: placa.toUpperCase(),
+      placa: placaNormalizada,
       data: dataHoje,
       horaSaida: null,
     });
@@ -181,7 +220,7 @@ export const registroManual = async (
         usuarioId: null,
         nomeMotorista: nomeMotorista || "Não Informado",
         tipoMotorista: tipoMotorista || "Acesso Manual",
-        placa: placa.toUpperCase(),
+        placa: placaNormalizada,
         marca: marca || "Desconhecida",
         modelo: modelo || "Desconhecido",
         cor: cor || "Indefinida",
@@ -278,6 +317,7 @@ export const getVagasOcupadas = async (
   res: Response,
 ): Promise<void> => {
   try {
+    res.set("Cache-Control", "no-store");
     const dataHoje = new Intl.DateTimeFormat("pt-BR", {
       timeZone: "America/Sao_Paulo",
     }).format(new Date());
