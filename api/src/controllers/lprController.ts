@@ -46,6 +46,7 @@ export const simularLeituraLPR = async (
 
     if (registroAberto) {
       registroAberto.horaSaida = horaAgora;
+      registroAberto.saidaManual = false;
       await registroAberto.save();
 
       const evento = {
@@ -56,6 +57,7 @@ export const simularLeituraLPR = async (
         timestamp: new Date().toISOString(),
         status: "conhecido",
         isSaida: true,
+        registrado: true,
         motorista: {
           nome: registroAberto.nomeMotorista || "Usuário",
           tipo: "Saída de Veículo",
@@ -68,6 +70,7 @@ export const simularLeituraLPR = async (
     }
 
     let statusVeiculo = "desconhecido";
+    let entradaRegistrada = false;
     let motoristaInfo = null;
     let marcaFinal = marca || "Desconhecida";
     let modeloFinal = modelo || "Desconhecido";
@@ -98,6 +101,7 @@ export const simularLeituraLPR = async (
         data: dataHoje,
         horaEntrada: horaAgora,
       });
+      entradaRegistrada = true;
 
     } else if (visitaAgendada) {
       statusVeiculo = "conhecido";
@@ -129,6 +133,7 @@ export const simularLeituraLPR = async (
           data: dataHoje,
           horaEntrada: horaAgora,
         });
+        entradaRegistrada = true;
       }
     }
 
@@ -140,6 +145,7 @@ export const simularLeituraLPR = async (
       timestamp: new Date().toISOString(),
       status: statusVeiculo,
       isSaida: false,
+      registrado: entradaRegistrada,
       motorista: motoristaInfo,
     };
 

@@ -1,5 +1,6 @@
 <template>
-  <div class="min-h-screen bg-[#FAFBFC] font-sans text-[#1E0D01]">
+  <div class="min-h-screen font-sans text-[#1E0D01]"
+    :class="tipoUsuario === 'seguranca' ? 'bg-[#faf3ee]' : 'bg-[#fafbfc]'">
     <header
       class="w-full min-h-[72px] bg-[#FAFBFC] border-b border-[#FDEEE8] flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-[52px] py-3 relative z-20"
     >
@@ -201,12 +202,13 @@
         @abrir-cadastro-rapido="abrirCadastroRapido"
         @abrir-edicao="abrirEdicao"
         @acesso-registrado="registrarAcesso"
+        @limpar-resultado="resultadoVisao = null"
       />
 
       <aside
         :class="[
           'w-full lg:w-[26%] shrink-0 flex flex-col gap-6',
-          tipoUsuario === 'admin' ? 'mt-0' : 'mt-[46px]',
+          tipoUsuario === 'seguranca' ? 'lg:mt-[88px]' : tipoUsuario === 'admin' ? 'mt-0' : 'mt-[46px]',
         ]"
       >
         <div
@@ -267,7 +269,7 @@
         </div>
 
         <div
-          v-if="tipoUsuario === 'admin' || tipoUsuario === 'seguranca'"
+          v-if="tipoUsuario === 'admin'"
           class="w-full bg-[#FD7917] shadow-[0px_8px_32px_rgba(253,121,23,0.3)] rounded-[24px] p-6 flex flex-col gap-4 text-left"
         >
           <h3 class="text-[16px] font-bold text-white">Quantitativo de Vagas</h3>
@@ -314,6 +316,18 @@
           </div>
         </div>
 
+        <div v-else-if="tipoUsuario === 'seguranca'"
+          class="w-full rounded-[24px] border border-[#ead9cc] bg-white p-6 text-left shadow-sm"
+        >
+          <h3 class="mb-3 text-base font-bold text-[#1E0D01]">Vagas do estacionamento</h3>
+          <p class="mb-2 text-xl font-bold text-[#4a2e1b]">
+            {{ vagasOcupadas }} <span class="text-sm font-medium text-[#625247]">de {{ totalVagasGlobal }} ocupadas</span>
+          </p>
+          <progress class="block h-2 w-full appearance-none overflow-hidden rounded-full bg-[#f1e4d9] accent-[#b94d02] [&::-webkit-progress-bar]:bg-[#f1e4d9] [&::-webkit-progress-value]:bg-[#b94d02]"
+            :value="vagasOcupadas" :max="totalVagasGlobal || 1"
+            aria-label="Ocupação do estacionamento" />
+          <p class="mt-3 text-sm font-medium text-[#625247]">{{ Math.max(0, totalVagasGlobal - vagasOcupadas) }} disponíveis</p>
+        </div>
         <div
           v-else
           class="w-full bg-white border border-[#FDEEE8] shadow-sm rounded-[24px] p-6 flex flex-col gap-4 text-left"
@@ -347,40 +361,17 @@
                 class="bg-green-50 rounded-2xl py-4 flex flex-col items-center justify-center gap-1 border border-green-100/50"
               >
                 <span class="text-[24px] font-bold text-green-600">{{ acessosAuto }}</span>
-                <span class="text-[12px] font-semibold text-green-600/60">Autorizados</span>
+                <span class="text-[12px] font-semibold text-green-800">Automáticos</span>
               </div>
               <div
                 class="bg-orange-50 rounded-2xl py-4 flex flex-col items-center justify-center gap-1 border border-orange-100/50"
               >
                 <span class="text-[24px] font-bold text-[#FD7917]">{{ acessosManual }}</span>
-                <span class="text-[12px] font-semibold text-[#FD7917]/60">Manuais</span>
+                <span class="text-[12px] font-semibold text-[#8a3b09]">Manuais</span>
               </div>
             </div>
           </div>
 
-          <div
-            class="w-full bg-white border border-[#FDEEE8] rounded-[24px] p-6 shadow-[0px_2px_12px_rgba(0,0,0,0.02)] flex flex-col text-left"
-          >
-            <h3 class="text-[16px] font-bold text-[#1E0D01] mb-5">Stream da Câmera</h3>
-            <div class="flex flex-col gap-3 text-[13px]">
-              <div class="flex justify-between items-center">
-                <span class="font-semibold text-gray-400">Protocolo</span>
-                <span class="font-bold text-[#1E0D01]">SSE (HTTP/2)</span>
-              </div>
-              <div class="flex justify-between items-center">
-                <span class="font-semibold text-gray-400">Endpoint</span>
-                <span class="font-bold text-[#1E0D01]">/events/cancela-01</span>
-              </div>
-              <div class="flex justify-between items-center">
-                <span class="font-semibold text-gray-400">Câmera</span>
-                <span class="font-bold text-[#1E0D01]">LPR-CAM-01</span>
-              </div>
-              <div class="flex justify-between items-center mt-1">
-                <span class="font-semibold text-gray-400">Status</span>
-                <span class="font-bold text-green-500">Online</span>
-              </div>
-            </div>
-          </div>
         </template>
       </aside>
     </main>
@@ -431,20 +422,20 @@
               </span>
             </div>
             <input
-              v-model="rtspUrl"
+              v-model.trim="rtspCameraId"
               class="mt-2 w-full rounded-lg border border-gray-200 px-2 py-1.5 text-xs disabled:bg-gray-100"
               :disabled="!rtspEnabled || processandoVisao"
-              type="url"
-              placeholder="rtsp://usuario:senha@camera/stream"
-              aria-label="URL da câmera RTSP"
+              type="text"
+              placeholder="portao-principal"
+              aria-label="Identificador da câmera RTSP"
             />
             <button
               type="button"
               class="mt-2 w-full rounded-lg bg-[#FD7917] px-3 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
-              :disabled="!rtspEnabled || !rtspUrl || processandoVisao"
+              :disabled="!rtspEnabled || !rtspCameraId || processandoVisao"
               @click="conectarRtsp"
             >
-              {{ rtspEnabled ? 'Conectar câmera RTSP' : 'Recurso desativado' }}
+              {{ rtspEnabled ? 'Consultar câmera RTSP' : 'Recurso desativado' }}
             </button>
             <p class="mt-1 text-[11px] text-gray-500">
               Ative com <code>VITE_RTSP_ENABLED=true</code> somente em um ambiente autorizado.
@@ -545,7 +536,7 @@ interface HistoricoVisao {
 const historicoVisao = ref<HistoricoVisao[]>([])
 const visionWorkerUrl = import.meta.env.VITE_VISION_WORKER_URL || 'http://localhost:8000'
 const rtspEnabled = import.meta.env.VITE_RTSP_ENABLED === 'true'
-const rtspUrl = ref('')
+const rtspCameraId = ref('')
 const appVersion = import.meta.env.VITE_APP_VERSION || 'desenvolvimento'
 
 const isModalVeiculoAberto = ref(false)
@@ -705,6 +696,7 @@ const alterarCamada = async (camada: number) => {
       return
     }
     camadaInstituicao.value = data.camada
+    resultadoVisao.value = null
     tipoUsuario.value = 'seguranca'
   } catch (error) {
     notify('Falha de comunicação com a API.', 'error')
@@ -715,14 +707,21 @@ const alterarCamada = async (camada: number) => {
 
 const enviarResultadoVisao = async (resultado: any) => {
   processandoVisao.value = true
-  resultadoVisao.value = resultado
+  resultadoVisao.value = null
   try {
+    // A prévia da placa e os quadros são usados somente na interface.
+    const payload = {
+      versao_evidencia: resultado.versao_evidencia,
+      liberacao_automatica: resultado.liberacao_automatica,
+      placa_recomendada: resultado.placa_recomendada,
+      confianca_recomendada: resultado.confianca_recomendada,
+    }
     const respostaApi = await fetchApi('/api/users/visao/evento', {
       method: 'POST',
-      body: JSON.stringify(resultado),
+      body: JSON.stringify(payload),
     })
     const retorno = await respostaApi.json()
-    resultadoVisao.value = { ...resultado, ...retorno }
+    if (respostaApi.ok) resultadoVisao.value = { ...resultado, ...retorno }
     historicoVisao.value = [
       {
         id: `${Date.now()}-${historicoVisao.value.length}`,
@@ -734,7 +733,7 @@ const enviarResultadoVisao = async (resultado: any) => {
     ].slice(0, 20)
     sessionStorage.setItem('visao-historico', JSON.stringify(historicoVisao.value))
     mensagemDev.value = respostaApi.ok
-      ? `Resultado recebido: ${retorno.status || 'processado'}.`
+      ? (retorno.status === 'revisao' ? 'Leitura pronta para revisão.' : 'Resultado recebido.')
       : retorno.erro || 'A API rejeitou o resultado do worker.'
     notify(mensagemDev.value, respostaApi.ok ? 'success' : 'error')
   } finally {
@@ -779,14 +778,14 @@ const processarDemonstracao = async (event: Event) => {
 }
 
 const conectarRtsp = async () => {
-  if (!rtspEnabled || !rtspUrl.value) return
+  if (!rtspEnabled || !rtspCameraId.value) return
   processandoVisao.value = true
-  mensagemDev.value = 'Conectando à câmera RTSP...'
+  mensagemDev.value = 'Consultando a câmera RTSP...'
   try {
     const resposta = await fetch(`${visionWorkerUrl}/rtsp/connect`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: rtspUrl.value }),
+      body: JSON.stringify({ camera_id: rtspCameraId.value }),
     })
     const resultado = await resposta.json()
     mensagemDev.value = resultado.erro || (

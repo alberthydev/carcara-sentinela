@@ -1,18 +1,79 @@
+import base64
 import json
 import os
-import re
 import tempfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from plate_worker import process_video
+from passage_tracker import PassageConfig
+from rtsp_worker import RtspService
+from yolo_evidence import YoloPipeline
 
 
-def rtsp_enabled() -> bool:
-    return os.getenv("VISION_RTSP_ENABLED", "false").lower() == "true"
+def preview_placa(video_path: Path, result: dict) -> str | None:
+    """Return one small plate crop from the uploaded file, when available."""
+    import cv2
+
+    if "quadros" in result:
+        candidates = [
+            (frame["frame"], plate) for frame in result["quadros"] for plate in frame["placas"]
+        ]
+    else:
+        candidates = [(item["frame"], item) for item in result.get("deteccoes", [])]
+    if not candidates:
+        return None
+
+    frame_number, plate = max(candidates, key=lambda item: (
+        bool(item[1].get("placa")) and item[1]["placa"] == result.get("placa_recomendada"),
+        item[1].get("ocr_executado", False),
+        item[1].get("confianca_detector", item[1].get("confianca", 0)),
+    ))
+    caixa = plate["caixa"]
+    x, y, width, height = (caixa[key] for key in ("x", "y", "largura", "altura"))
+    capture = cv2.VideoCapture(str(video_path))
+    try:
+        if not capture.set(cv2.CAP_PROP_POS_FRAMES, frame_number):
+            return None
+        ok, frame = capture.read()
+        if not ok or capture.get(cv2.CAP_PROP_POS_FRAMES) != frame_number + 1:
+            return None
+        crop = frame[y:y + height, x:x + width]
+        if not crop.size:
+            return None
+        crop_height, crop_width = crop.shape[:2]
+        scale = min(1, 420 / crop_width, 210 / crop_height)
+        if scale < 1:
+            crop = cv2.resize(crop, (max(1, round(crop_width * scale)), max(1, round(crop_height * scale))),
+                              interpolation=cv2.INTER_AREA)
+        encoded, data = cv2.imencode(".jpg", crop, [cv2.IMWRITE_JPEG_QUALITY, 78])
+        if encoded and len(data) <= 60_000:
+            return "data:image/jpeg;base64," + base64.b64encode(data).decode("ascii")
+    except cv2.error:
+        return None
+    finally:
+        capture.release()
+    return None
+
+
+class VisionServer(ThreadingHTTPServer):
+    def __init__(self, address: tuple[str, int], pipeline: YoloPipeline | None = None,
+                 sample_every: int = 5, roi: str | None = None,
+                 passage_config: PassageConfig = PassageConfig("upload"),
+                 rtsp: RtspService | None = None):
+        if sample_every < 1:
+            raise ValueError("VISION_EVERY deve ser maior que zero")
+        self.pipeline = pipeline
+        self.sample_every = sample_every
+        self.roi = roi
+        self.passage_config = passage_config
+        self.rtsp = rtsp
+        super().__init__(address, VisionHandler)
 
 
 class VisionHandler(BaseHTTPRequestHandler):
+    server: VisionServer
+
     def _respond(self, status: int, payload: dict) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
@@ -35,41 +96,38 @@ class VisionHandler(BaseHTTPRequestHandler):
             self._respond(200, {"status": "ok", "servico": "vision-worker"})
             return
         if self.path == "/rtsp/status":
+            service = self.server.rtsp
             self._respond(200, {
-                "status": "enabled" if rtsp_enabled() else "disabled",
+                "status": "enabled" if service else "disabled",
                 "servico": "vision-worker",
                 "recurso": "rtsp",
+                **(service.status() if service else {}),
             })
             return
         self._respond(404, {"erro": "Endpoint não encontrado."})
 
     def do_POST(self) -> None:
         if self.path == "/rtsp/connect":
-            if not rtsp_enabled():
+            service = self.server.rtsp
+            if service is None:
                 self._respond(503, {"erro": "A integração RTSP está desativada."})
                 return
             try:
                 body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))))
-                url = body.get("url", "")
-                if not isinstance(url, str) or not re.match(r"^rtsps?://", url):
-                    self._respond(400, {"erro": "Informe uma URL RTSP válida."})
+                camera_id = body.get("camera_id") if isinstance(body, dict) else None
+                if not isinstance(camera_id, str):
+                    self._respond(400, {"erro": "Informe o identificador da câmera configurada."})
                     return
-                import cv2
-
-                capture = cv2.VideoCapture(url)
-                conectado = capture.isOpened()
-                if conectado:
-                    conectado, _ = capture.read()
-                capture.release()
+                state = service.status()["cameras"].get(camera_id)
+                if state is None:
+                    self._respond(404, {"erro": "Câmera RTSP não configurada."})
+                    return
                 self._respond(
-                    200 if conectado else 502,
-                    {"status": "connected" if conectado else "unavailable"},
+                    200 if state == "connected" else 503,
+                    {"status": state},
                 )
-            except (ValueError, json.JSONDecodeError):
+            except ValueError:
                 self._respond(400, {"erro": "JSON inválido para conexão RTSP."})
-            except Exception as error:
-                print(f"Erro ao conectar à câmera RTSP: {error}")
-                self._respond(502, {"erro": "Não foi possível conectar à câmera RTSP."})
             return
 
         if self.path != "/process":
@@ -92,7 +150,14 @@ class VisionHandler(BaseHTTPRequestHandler):
                 video.write(self.rfile.read(content_length))
                 video_path = Path(video.name)
 
-            resultado = process_video(video_path)
+            resultado = process_video(
+                video_path, sample_every=self.server.sample_every,
+                roi=self.server.roi, pipeline=self.server.pipeline,
+                passage_config=self.server.passage_config if self.server.pipeline else None,
+            )
+            preview = preview_placa(video_path, resultado)
+            if preview:
+                resultado["imagem_placa"] = preview
             self._respond(200, resultado)
         except (ValueError, FileNotFoundError, RuntimeError) as error:
             self._respond(400, {"erro": str(error)})
@@ -107,9 +172,23 @@ class VisionHandler(BaseHTTPRequestHandler):
 def main() -> None:
     host = os.getenv("VISION_HOST", "0.0.0.0")
     port = int(os.getenv("VISION_PORT", "8000"))
-    server = ThreadingHTTPServer((host, port), VisionHandler)
-    print(f"Vision worker HTTP ouvindo em {host}:{port}")
-    server.serve_forever()
+    pipeline = YoloPipeline.from_env()
+    sample_every = int(os.getenv("VISION_EVERY", "5"))
+    line_x = os.getenv("VISION_PASSAGE_LINE_X")
+    direction = os.getenv("VISION_PASSAGE_ENTRY", "right")
+    if direction not in {"left", "right"}:
+        raise ValueError("VISION_PASSAGE_ENTRY deve ser left ou right")
+    passages = PassageConfig("upload", int(line_x) if line_x else None, direction == "right")
+    rtsp = RtspService.from_env(pipeline)
+    with VisionServer((host, port), pipeline, sample_every, os.getenv("VISION_ROI"), passages, rtsp) as server:
+        try:
+            if rtsp:
+                rtsp.start()
+            print(f"Vision worker HTTP ouvindo em {host}:{port}")
+            server.serve_forever()
+        finally:
+            if rtsp:
+                rtsp.close()
 
 
 if __name__ == "__main__":
