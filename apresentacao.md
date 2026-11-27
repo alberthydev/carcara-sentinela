@@ -1,5 +1,56 @@
 # Carcará Sentinela — apresentação do projeto
 
+## Demonstração para a banca
+
+**O Carcará separa a leitura da placa da decisão de registrar um acesso.**
+A demonstração roda localmente, com placas fictícias e um banco descartável.
+
+| Cena | O que mostrar | Como foi produzida |
+| --- | --- | --- |
+| Veículo reconhecido | Caixa de veículo, recorte e leitura `ABC1234` | Pesos YOLO reais e Tesseract em clipe de bancada |
+| Revisão e confirmação | O vídeo chega em revisão. A decisão da portaria aparece no histórico | App, API e MongoDB locais |
+| Pessoa segurando placa | A placa sem veículo gera zero eventos e deixa o histórico intacto | Detecções simuladas, executadas pelo rastreador real |
+| Dois veículos | Duas entradas independentes. Reenviar uma decisão mantém o mesmo total | Detecções simuladas, API e MongoDB locais |
+| Celular e RTSP | Mostre o efeito de tremor e compressão e a retomada do stream após interrupção | Inferência real em clipe composto e RTSP em loopback |
+
+![Caixas do veículo e da placa e ampliação do recorte usado pelo Tesseract](assets/demo-banca/captura-dia.jpg)
+
+O YOLO localizou a placa fictícia e o Tesseract retornou `ABC1234`. A
+confiança mostrada na imagem é a do detector de placa. Os clipes usam a
+foto de Rudolf Stricker com placas fictícias sobrepostas. [Foto original e licença](https://commons.wikimedia.org/wiki/File:Fiat_500_front_20080621.jpg).
+
+![Cartão de revisão manual do painel da portaria com a placa fictícia ABC1234](assets/demo-banca/painel-revisao.png)
+
+O upload chegou para revisão com o recorte visível. O operador escolheu **Registrar entrada**.
+
+![Pessoa simulada segurando uma placa e resultado de zero eventos](assets/demo-banca/pedestre.png)
+
+Na simulação com placa sem veículo, o rastreador não abriu uma passagem.
+
+![Duas trajetórias simuladas com decisões de entrada independentes](assets/demo-banca/dois-veiculos.png)
+
+O histórico registra duas entradas da simulação e uma confirmação manual.
+O reenvio de uma das entradas conservou os três registros.
+
+![Histórico do painel com duas entradas automáticas de simulação e uma manual](assets/demo-banca/painel-historico.png)
+
+![Quadro com tremor e compressão simulados e recorte localizado sem leitura válida](assets/demo-banca/celular-simulado.jpg)
+
+Na captura com tremor e compressão simulados, o YOLO localizou a placa e o
+Tesseract ficou sem leitura válida. A câmera de celular do campus segue pendente.
+
+**Velocidade em bancada.** Em cinco clipes de um segundo no Ryzen 7 5700X,
+o perfil CPU com YOLOX-Nano, ROI e PP-OCRv4 reduziu o p95 de processamento
+de **9,53 s para 0,81 s** e acertou **5 de 5 passagens**. O PP-OCRv4 foi
+avaliado no benchmark. O serviço desta demonstração usa Tesseract.
+[Metodologia e resultados](docs/plano-banca/01-repasse.md).
+
+**Onde roda.** O ensaio usa app, API, MongoDB e worker na mesma máquina,
+em loopback. O CD está configurado para publicar imagens no GHCR.
+A hospedagem institucional ainda precisa de verificação.
+
+[Roteiro ao vivo e instruções de contingência](docs/plano-banca/06-repasse.md).
+
 ## 1. Visão geral
 
 O Carcará Sentinela é um sistema de controle de acesso veicular para instituições de ensino. A solução registra entradas e saídas, identifica veículos cadastrados, apoia a segurança em intervenções manuais e fornece informações de ocupação do estacionamento em tempo real.
@@ -47,16 +98,13 @@ Essa separação permite liberar apenas os recursos compatíveis com cada infrae
 ### 3.3 Layer 2 — visão computacional
 
 - Vision-worker isolado em uma imagem Docker própria.
-- Processamento de vídeo com OpenCV.
+- Processamento de vídeo com OpenCV e perfil experimental com YOLO para veículos e placas.
 - OCR com Tesseract.
 - Normalização de placas brasileiras.
 - Deduplicação de leituras no mesmo frame.
-- Consolidação de várias leituras e cálculo de confiança.
+- Consolidação por passagem, com direção e redução de falsas aberturas.
 - Uso de `result.json` para demonstrações reproduzíveis.
-- Envio do resultado normalizado para a API.
-- Autorização automática ou encaminhamento para revisão manual.
-
-O fluxo atual processa vídeos enviados. O suporte RTSP foi preparado por feature toggle e permanece desativado por padrão.
+- Upload para revisão manual e ingestão dedicada de passagens confirmadas.
 
 ### 3.4 Feature toggle RTSP
 
@@ -65,7 +113,8 @@ O vision-worker possui:
 - `VISION_RTSP_ENABLED=false`: controla o recurso no worker.
 - `VITE_RTSP_ENABLED=false`: controla a opção exibida na interface.
 - `GET /rtsp/status`: informa se o recurso está habilitado.
-- `POST /rtsp/connect`: valida a URL, abre a câmera e tenta ler o primeiro frame.
+- `POST /rtsp/connect`: consulta o estado de uma câmera configurada pelo identificador.
+- Cada câmera configurada tem captura contínua, amostragem, ROI, sentido e reconexão. O worker envia passagens confirmadas por uma fila limitada.
 
 Para ativar em um ambiente autorizado:
 
@@ -73,6 +122,9 @@ Para ativar em um ambiente autorizado:
 VISION_RTSP_ENABLED=true
 VITE_RTSP_ENABLED=true
 ```
+
+A ativação também exige os pesos YOLO, a lista de câmeras e a credencial
+dedicada no worker e na API. [Configuração do worker](vision-worker/README.md).
 
 ### 3.5 Autenticação e segurança
 
@@ -94,7 +146,7 @@ VITE_RTSP_ENABLED=true
 
 - Registro de acesso automático.
 - Registro de acesso manual.
-- Entrada e saída identificadas pela existência de registro aberto.
+- Na Layer 2, o sentido observado orienta a decisão automática, e a API verifica o estado do acesso. A portaria escolhe o sentido na revisão manual.
 - Contador de vagas baseado em placas distintas com entrada aberta.
 - Atualização do contador sem cache após novas liberações.
 - Serialização das atualizações para evitar valores atrasados.
@@ -118,8 +170,9 @@ flowchart LR
     U[Usuários e segurança] --> APP[Frontend Vue]
     LPR[Câmeras LPR / robô Layer 1] -->|eventos JSON| API[API Express]
     APP -->|JWT / SSE / HTTP| API
-    VIDEO[Vídeo ou result.json Layer 2] --> WORKER[Vision-worker Python]
-    WORKER -->|resultado normalizado| API
+    VIDEO[Vídeo de upload Layer 2] --> WORKER[Vision-worker Python]
+    WORKER -->|evidência de upload| APP
+    WORKER -->|passagem RTSP confirmada| API
     API --> DB[(MongoDB)]
     API --> AUTH[Autenticação e autorização]
     API --> LAYER{Camada da instituição}
@@ -171,15 +224,20 @@ sequenceDiagram
     S->>APP: Seleciona vídeo ou result.json
     alt Vídeo
         APP->>W: POST /process
-        W->>W: OpenCV + Tesseract
+        W->>W: OpenCV ou YOLO, com Tesseract
         W-->>APP: Placa, confiança e detecções
     else Resultado reproduzível
         APP->>APP: Lê result.json
     end
     APP->>API: POST /api/users/visao/evento
-    API->>DB: Busca veículo e registro aberto
-    API->>DB: Registra entrada, saída ou revisão
-    API-->>APP: Resultado da autorização
+    API-->>APP: Revisão sem gravar acesso
+    S->>APP: Confirma entrada ou saída
+    APP->>API: POST /api/users/admin/acesso-manual
+    API->>DB: Grava com direção explícita
+    opt Captura RTSP configurada
+        W->>API: POST /api/users/visao/passagem
+        API->>DB: Valida cadastro, estado e ID da passagem
+    end
 ```
 
 ## 7. Fluxo de autenticação e recuperação
@@ -225,28 +283,28 @@ flowchart TD
 
 Validações atuais:
 
-- API: 26 testes passando.
-- Vision-worker: 13 testes passando.
+- API: 29 testes passando, incluindo 4 com MongoDB local.
+- Vision-worker: 36 testes passando com upload real de bancada e fonte RTSP local simulada.
 - UI: 2 testes Vitest passando.
 - Type-check da API e UI.
-- Build das imagens Docker da API, UI e vision-worker.
+- Build da API, do app e da imagem do vision-worker.
 
 ## 9. URLs
 
 | Serviço | URL |
 |---|---|
-| Aplicação | `http://localhost` |
-| API | `http://localhost:3000` |
-| Swagger | `http://localhost:3000/docs` |
-| Vision-worker | `http://localhost:8000/health` |
+| Aplicação e API da bancada | `http://127.0.0.1:3300/login` e `http://127.0.0.1:3300/api/users/health` |
+| Swagger da bancada | `http://127.0.0.1:3300/docs` |
+| Vision-worker da bancada | `http://127.0.0.1:8300/health` |
+| Compose local padrão | App em `http://localhost`, API na porta 3000 e worker na porta 8000 |
 
 ## 10. Limites atuais e próximos passos
 
-- O RTSP está preparado, mas desativado por padrão; a conexão atual valida a abertura e o primeiro frame.
-- O processamento contínuo de stream RTSP ainda pode ser evoluído.
+- O RTSP contínuo foi exercitado com uma fonte de bancada e fica desativado por padrão. O aceite precisa de câmera IP e vídeo de celular autorizados do campus.
+- Os limiares, a geometria e a vazão por câmera precisam ser medidos com gravações representativas.
 - O envio SMTP real depende de configuração externa.
 - A UI ainda pode receber mais testes E2E de navegador.
-- O detector de placas pode ser comparado futuramente com modelos especializados.
+- O perfil de OCR neural e a licença dos pesos de placa precisam ser decididos antes do uso institucional.
 
 ## 11. Preparação futura para produção com redes neurais
 
@@ -309,8 +367,8 @@ flowchart LR
 2. Medir resolução da placa, iluminação, ângulo, velocidade e oclusão.
 3. Criar um conjunto anotado com placas brasileiras, veículos e condições reais.
 4. Treinar ou ajustar o detector de placa para as câmeras do local.
-5. Comparar OCR neural com Tesseract no mesmo conjunto de teste.
-6. Adicionar tracking e votação temporal para não decidir por uma única leitura.
+5. Repetir a comparação entre OCR neural e Tesseract com as amostras autorizadas.
+6. Calibrar o rastreamento e a votação temporal no cenário do campus.
 7. Definir limiares separados para liberação automática e revisão humana.
 8. Testar falsos positivos, placas desconhecidas, motos, chuva, noite e veículos em sentidos diferentes.
 9. Fazer piloto em uma câmera antes de ampliar para o campus.
@@ -320,7 +378,7 @@ O sistema deve conservar a intervenção humana quando a confiança for insufici
 
 ## 12. Requisitos mínimos para implantação
 
-Os requisitos abaixo são uma referência inicial para orçamento. A especificação final deve ser confirmada após teste com vídeos reais, quantidade de câmeras e resolução escolhida.
+Os valores abaixo são premissas iniciais de orçamento. A configuração de produção depende das medições de carga por câmera, qualidade de leitura e latência da rede. Os resultados de bancada ainda não dimensionam o campus.
 
 | Item | Demonstração / piloto | Produção — 1 câmera | Produção — 2 a 4 câmeras |
 |---|---|---|---|

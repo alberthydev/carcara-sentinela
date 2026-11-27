@@ -1,386 +1,176 @@
 <template>
-  <div class="w-full lg:w-[71%] shrink-0 flex flex-col gap-[20px] animate-fadeIn">
-    <div class="flex items-center gap-4">
-      <h2 class="text-[22px] font-bold text-[#1E0D01] flex items-center gap-2">
-        Controle de Acesso - Cancela
-      </h2>
-      <span class="text-[#FD7917] text-sm font-medium ml-2"> {{ textoStatusCamera }} </span>
-    </div>
+  <div class="portaria w-full min-w-0 shrink-0 lg:w-[71%]">
+    <header class="portaria-cabecalho">
+      <div>
+        <h2>Portaria</h2>
+        <p>Controle de acesso de veículos</p>
+      </div>
+      <span class="portaria-status" :class="leituraDisponivel ? 'is-success' : 'is-warning'" role="status">
+        <Radio v-if="leituraDisponivel" :size="16" aria-hidden="true" />
+        <WifiOff v-else :size="16" aria-hidden="true" />
+        {{ leituraDisponivel ? 'Leitura disponível' : 'Leitura indisponível' }}
+      </span>
+    </header>
 
-    <div
-      class="w-full flex flex-col md:flex-row gap-5 bg-white border border-[#FDEEE8] rounded-2xl p-4 shadow-[0px_2px_12px_rgba(0,0,0,0.02)]"
-    >
-      <div
-        class="w-full md:w-[280px] h-[160px] bg-[#1A1C23] rounded-xl relative overflow-hidden flex flex-col items-center justify-center shrink-0"
-      >
-        <div class="absolute top-3 left-3 flex items-center gap-2 text-xs font-bold text-white/70">
-          <span
-            :class="[
-              'w-2 h-2 rounded-full',
-              camada === 2
-                ? workerOnline && visionResult
-                  ? 'bg-green-500'
-                  : workerOnline
-                    ? 'bg-yellow-500 animate-pulse'
-                    : 'bg-red-500'
-                : cameraOnline
-                ? 'bg-green-500 animate-pulse'
-                : 'bg-gray-500',
-            ]"
-          ></span>
-          {{ camada === 2 ? (workerOnline ? (visionResult ? 'RESULTADO' : 'WORKER AGUARDANDO') : 'WORKER OFFLINE') : cameraStatusLabel }}
-        </div>
+    <section class="portaria-card atendimento" aria-labelledby="atendimento-titulo">
+      <div class="portaria-card-topo">
+        <h3 id="atendimento-titulo">Atendimento atual</h3>
+        <span v-if="filaLPR.length" class="portaria-status is-neutral">
+          {{ filaLPR.length }} na fila
+        </span>
+      </div>
 
-        <div v-if="eventoLPR" class="flex flex-col items-center gap-2 mt-4">
-          <div
-            :class="[
-              'px-6 py-2 border-2 rounded-lg font-mono text-2xl tracking-widest font-bold',
-              eventoLPR.status === 'conhecido'
-                ? 'border-green-500 text-green-400'
-                : 'border-red-500 text-red-400',
-            ]"
-          >
-            {{ formatarPlaca(eventoLPR.placa) }}
+      <div class="atendimento-grade">
+        <div class="atendimento-conteudo">
+          <div class="atendimento-estado" aria-live="polite">
+            <span class="portaria-status" :class="estadoAtendimento.classe">
+              <component :is="estadoAtendimento.icone" :size="16" aria-hidden="true" />
+              {{ estadoAtendimento.rotulo }}
+            </span>
+            <p v-if="eventoLPR" class="atendimento-placa">{{ formatarPlaca(eventoLPR.placa) }}</p>
+            <p v-else-if="leituraSemPlaca" class="atendimento-sem-placa">Nenhuma placa identificada</p>
+            <p v-else class="atendimento-sem-placa">{{ leituraDisponivel ? 'Nenhum veículo em atendimento' : 'Leitura temporariamente indisponível' }}</p>
+            <p v-if="eventoLPR || leituraSemPlaca" class="atendimento-hora">
+              <Clock3 :size="16" aria-hidden="true" />
+              {{ eventoLPR?.horaStr || leituraSemPlaca }}
+            </p>
+            <p class="atendimento-orientacao">{{ estadoAtendimento.orientacao }}</p>
           </div>
-          <span class="text-white/50 text-xs">{{ eventoLPR.horaStr }}</span>
-        </div>
 
-        <div
-          v-else-if="camada === 2 && visionResult"
-          class="relative z-10 flex flex-col items-center gap-2"
-        >
-          <div
-            :class="[
-              'px-4 py-2 border-2 rounded-lg font-mono text-xl tracking-widest font-bold bg-black/70',
-              visionResult.liberacao_automatica
-                ? 'border-green-500 text-green-400'
-                : 'border-yellow-500 text-yellow-300',
-            ]"
-          >
-            {{ formatarPlaca(visionResult.placa_recomendada || '--------') }}
+          <dl v-if="eventoLPR?.usuario || dadosVeiculo" class="atendimento-dados">
+            <div v-if="eventoLPR?.usuario">
+              <dt>Motorista</dt>
+              <dd>{{ eventoLPR.usuario.nome }} <span v-if="eventoLPR.usuario.tipo">· {{ eventoLPR.usuario.tipo }}</span></dd>
+            </div>
+            <div v-if="dadosVeiculo">
+              <dt>Veículo</dt>
+              <dd>{{ dadosVeiculo }}</dd>
+            </div>
+          </dl>
+
+          <div v-if="eventoLPR?.status === 'revisao'" class="portaria-acoes">
+            <button class="portaria-botao is-primary" type="button" :disabled="registrandoAcesso"
+              @click="acaoLiberarSemCadastro('entrada')">
+              <ArrowDownLeft :size="19" aria-hidden="true" />
+              Registrar entrada
+            </button>
+            <button class="portaria-botao" type="button" :disabled="registrandoAcesso"
+              @click="acaoLiberarSemCadastro('saida')">
+              <ArrowUpRight :size="19" aria-hidden="true" />
+              Registrar saída
+            </button>
           </div>
-          <span class="text-white/70 text-xs">
-            Confiança: {{ Math.round((visionResult.confianca_recomendada || 0) * 100) }}%
-          </span>
+
+          <div v-else-if="eventoLPR?.status === 'desconhecido'" class="portaria-acoes">
+            <button class="portaria-botao is-primary" type="button" :disabled="registrandoAcesso"
+              @click="acaoCadastrarLiberar">
+              Cadastrar e liberar
+            </button>
+            <button class="portaria-botao" type="button" :disabled="registrandoAcesso"
+              @click="acaoLiberarSemCadastro()">
+              Liberar sem cadastro
+            </button>
+          </div>
         </div>
 
-        <div v-else class="flex flex-col items-center gap-2 text-white/30">
-          <svg
-            width="32"
-            height="32"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242M12 12v9" />
-            <path d="m8 17 4 4 4-4" />
-          </svg>
-          <span class="text-sm">Sem veículo</span>
+        <figure v-if="imagemPlaca" class="atendimento-imagem">
+          <img :src="imagemPlaca" alt="Recorte da placa no vídeo enviado" @error="imagemFalhou = true" />
+          <figcaption>Recorte da leitura</figcaption>
+        </figure>
+        <div v-else class="atendimento-imagem is-empty">
+          <ScanLine :size="34" aria-hidden="true" />
+          <span>{{ eventoLPR || leituraSemPlaca ? 'Sem imagem desta leitura' : 'O recorte aparece quando disponível' }}</span>
         </div>
       </div>
 
-      <div class="flex flex-col justify-center flex-1 py-2">
-        <h3 class="text-lg font-bold text-[#1E0D01]">Câmera da Cancela</h3>
-        <p class="text-[13px] text-[#AAB1BD] mt-1" v-if="eventoLPR">
-          Placa {{ eventoLPR.placa }} {{ eventoLPR.isSaida ? 'registrou a saída' : 'identificada' }} -
-          {{ eventoLPR.horaStr }}
+      <div v-if="eventoLPR || leituraSemPlaca || mensagemRegistro || erroRegistro" class="atendimento-rodape">
+        <p v-if="registrandoAcesso" role="status">Registrando acesso…</p>
+        <p v-else-if="erroRegistro" class="portaria-erro" role="alert">{{ erroRegistro }}</p>
+        <p v-else-if="mensagemRegistro" class="portaria-confirmacao" role="status">
+          <CircleCheck :size="19" aria-hidden="true" /> {{ mensagemRegistro }}
         </p>
-        <p class="text-[13px] text-[#AAB1BD] mt-1" v-else-if="camada === 2 && visionResult">
-          Placa {{ visionResult.placa_recomendada }} recebida do vision-worker.
-        </p>
-        <p class="text-[13px] text-[#AAB1BD] mt-1" v-else>
-          {{ camada === 2 ? 'Aguardando resultado do vision-worker.' : 'Monitorando - aguardando próximo veículo.' }}
-        </p>
-
-        <div class="flex items-center gap-4 mt-4 text-[13px]">
-          <div
-            :class="[
-              'flex items-center gap-1.5 font-semibold',
-              camada === 2 && workerOnline || (camada === 1 && cameraOnline)
-                ? 'text-green-600'
-                : 'text-red-600',
-            ]"
-          >
-            <span
-              :class="[
-                'w-2 h-2 rounded-full',
-                camada === 2 && workerOnline || (camada === 1 && cameraOnline)
-                  ? 'bg-green-500'
-                  : 'bg-red-500',
-              ]"
-            ></span>
-            {{ camada === 2 ? (workerOnline ? (visionResult ? 'Resultado recebido' : 'Vision worker aguardando') : 'Vision worker offline') : cameraStatusLabel }}
-          </div>
-          <span class="text-gray-400">{{ camada === 2 ? 'Processamento local' : sseConectado ? 'SSE conectado' : 'SSE desconectado' }}</span>
-        </div>
-
-        <button
-          v-if="eventoLPR"
-          @click="resetarLeitura"
-          class="mt-4 px-4 py-1.5 border border-[#F79347] text-[#FD7917] rounded-lg text-sm font-semibold w-max hover:bg-[#FDEEE8] transition-colors"
-        >
-          Próximo
+        <button v-if="eventoLPR || leituraSemPlaca" class="portaria-link" type="button"
+          :disabled="registrandoAcesso" @click="resetarLeitura">
+          Próximo veículo <ArrowRight :size="17" aria-hidden="true" />
         </button>
       </div>
-    </div>
+    </section>
 
-    <div class="min-h-[180px] flex flex-col justify-center">
-      <div
-        v-if="!eventoLPR"
-        class="w-full bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex items-center gap-4"
-      >
-        <div
-          class="w-12 h-12 bg-orange-50 text-[#FD7917] rounded-full flex items-center justify-center shrink-0"
-        >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          </svg>
-        </div>
-        <div>
-          <h3 class="font-bold text-[#1E0D01]">Monitoramento ativo</h3>
-          <p class="text-sm text-gray-400 mt-1">
-            {{ camada === 2 ? 'Selecione um vídeo e resultado no painel Dev.' : 'Próxima leitura simulada em ~15s' }}
-          </p>
-        </div>
+    <section class="portaria-card portaria-historico" aria-labelledby="historico-titulo" :aria-busy="carregandoHistorico">
+      <div class="portaria-card-topo">
+        <h3 id="historico-titulo">{{ historicoAberto ? 'Histórico de acessos' : 'Últimos acessos' }}</h3>
+        <button class="portaria-link" type="button" :aria-expanded="historicoAberto"
+          aria-controls="filtros-historico" @click="alternarHistorico">
+          {{ historicoAberto ? 'Fechar histórico' : 'Ver histórico' }}
+          <ChevronDown :size="17" :class="{ 'rotate-180': historicoAberto }" aria-hidden="true" />
+        </button>
       </div>
 
-      <div
-        v-else-if="eventoLPR.status === 'conhecido'"
-        class="w-full bg-[#F6FDF8] border border-[#D1F4E0] rounded-2xl p-6"
-      >
-        <div class="flex items-center gap-3 mb-6">
-          <div
-            class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center shadow-sm"
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="3"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          </div>
-          <div>
-            <h3 class="font-bold text-green-700">Acesso Liberado Automaticamente</h3>
-            <p class="text-xs text-green-600/70">
-              Placa registrada no sistema - {{ eventoLPR.horaStr }}
-            </p>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-8 border-t border-green-100 pt-5">
-          <div>
-            <h4 class="text-[11px] font-bold text-[#FD7917] tracking-wider mb-4 uppercase">
-              Veículo
-            </h4>
-            <div class="grid grid-cols-2 gap-y-4 text-sm">
-              <div>
-                <span class="block text-xs font-bold text-[#1E0D01]">Marca</span
-                ><span class="text-gray-500">{{ eventoLPR.veiculo?.marca }}</span>
-              </div>
-              <div>
-                <span class="block text-xs font-bold text-[#1E0D01]">Modelo</span
-                ><span class="text-gray-500">{{ eventoLPR.veiculo?.modelo }}</span>
-              </div>
-              <div>
-                <span class="block text-xs font-bold text-[#1E0D01]">Cor</span
-                ><span class="text-gray-500">{{ eventoLPR.veiculo?.cor }}</span>
-              </div>
-              <div>
-                <span class="block text-xs font-bold text-[#1E0D01]">Placa</span
-                ><span class="text-gray-500">{{ eventoLPR.placa }}</span>
-              </div>
-            </div>
-          </div>
-          <div class="border-l border-green-100 pl-8">
-            <h4 class="text-[11px] font-bold text-[#FD7917] tracking-wider mb-4 uppercase">
-              Usuário Vinculado
-            </h4>
-            <div class="flex items-center gap-3 mb-4">
-              <div class="w-10 h-10 bg-gray-200 rounded-full overflow-hidden">
-                <img
-                  v-if="eventoLPR.usuario?.fotoUrl"
-                  :src="eventoLPR.usuario.fotoUrl"
-                  class="w-full h-full object-cover"
-                />
-                <svg
-                  v-else
-                  class="w-full h-full text-gray-400 p-2"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path
-                    d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h5 class="font-bold text-[#1E0D01] text-base">{{ eventoLPR.usuario?.nome }}</h5>
-                <span
-                  class="text-[11px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold"
-                  >{{ eventoLPR.usuario?.tipo }}</span
-                >
-              </div>
-            </div>
-            <div class="space-y-2 text-xs">
-              <div class="flex justify-between border-b border-green-50 pb-1">
-                <span class="font-bold text-[#1E0D01]">Matrícula</span
-                ><span class="text-gray-500">{{ eventoLPR.usuario?.matricula || '-' }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div id="filtros-historico" v-show="historicoAberto" class="historico-filtros">
+        <label>Buscar placa
+          <input v-model.trim="buscaPlaca" type="search" maxlength="9" placeholder="Ex. ABC1D23" />
+        </label>
+        <label>Sentido
+          <select v-model="filtroSentido">
+            <option value="">Todos</option>
+            <option value="entrada">Entrada</option>
+            <option value="saida">Saída</option>
+          </select>
+        </label>
       </div>
 
-      <div
-        v-else-if="eventoLPR.status === 'revisao'"
-        class="w-full bg-[#FFF9E8] border border-[#F6D98B] rounded-2xl p-6"
-      >
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 bg-yellow-500 text-white rounded-full flex items-center justify-center font-bold">?</div>
-          <div>
-            <h3 class="font-bold text-yellow-700">Revisão manual necessária</h3>
-            <p class="text-xs text-yellow-700/70">
-              Placa {{ eventoLPR.placa }} abaixo do nível de confiança automática.
-            </p>
-          </div>
-        </div>
+      <p v-if="carregandoHistorico && !acessosVisiveis.length" class="historico-vazio" role="status">Carregando acessos…</p>
+      <div v-else-if="erroHistorico" class="historico-vazio">
+        <p role="alert">Não foi possível atualizar os acessos.</p>
+        <button class="portaria-link" type="button" @click="fetchHistoricoSeguranca">Tentar novamente</button>
       </div>
-
-      <div
-        v-else-if="eventoLPR.status === 'desconhecido'"
-        class="w-full bg-[#FFF5F5] border border-[#FDE2E2] rounded-2xl p-6"
-      >
-        <div class="flex items-center gap-3 mb-6">
-          <div
-            class="w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center shadow-sm font-bold text-lg"
-          >
-            !
-          </div>
-          <div>
-            <h3 class="font-bold text-red-600">Placa Não Cadastrada - Intervenção Necessária</h3>
-            <p class="text-xs text-red-500/70">
-              Placa {{ eventoLPR.placa }} não encontrada - {{ eventoLPR.horaStr }}
-            </p>
-          </div>
-        </div>
-
-        <div class="flex items-center justify-between border-t border-red-100 pt-5">
-          <p class="text-sm text-gray-500">Oriente o motorista e escolha como prosseguir:</p>
-          <div class="flex items-center gap-3">
-            <button
-              @click="acaoCadastrarLiberar"
-              class="bg-gradient-to-r from-[#FD7917] to-[#F79347] text-white px-5 py-2.5 rounded-xl font-semibold text-sm shadow-[0px_4px_12px_rgba(253,121,23,0.2)] hover:opacity-90 transition-opacity"
-            >
-              Cadastrar e Liberar
-            </button>
-            <button
-              @click="acaoLiberarSemCadastro"
-              class="bg-white border border-[#FD7917] text-[#FD7917] px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-orange-50 transition-colors"
-            >
-              Liberar sem Cadastro
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <section
-      class="w-full border border-gray-100 rounded-2xl p-6 bg-white shadow-sm flex flex-col flex-1"
-    >
-      <div class="flex items-center justify-between mb-5">
-        <h2 class="text-[16px] font-bold text-[#1E0D01] flex items-center gap-2">
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#FD7917"
-            stroke-width="2"
-          >
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-          </svg>
-          Histórico de Acesso — Hoje
-        </h2>
-        <span class="text-xs text-gray-400 font-medium">{{ historico.length }} registros</span>
-      </div>
-
-      <div class="w-full flex flex-col gap-2">
-        <div
-          class="grid grid-cols-5 px-4 mb-2 text-[12px] font-bold text-gray-400 uppercase tracking-wider"
-        >
-          <div class="col-span-1">Usuário</div>
-          <div class="col-span-1">Tipo</div>
-          <div class="col-span-2">Veículo</div>
-          <div class="col-span-1 text-right">Hora</div>
-        </div>
-
-        <div v-if="carregandoHistorico" class="space-y-2" aria-label="Carregando histórico">
-          <div v-for="linha in 3" :key="linha" class="h-[46px] animate-pulse rounded-xl bg-gray-100"></div>
-        </div>
-        <div
-          v-else-if="historico.length === 0"
-          class="flex items-center justify-center h-[100px] text-gray-400 text-sm font-medium"
-        >
-          Nenhum acesso registrado ainda.
-        </div>
-
-        <div
-          v-for="(item, index) in historico"
-          :key="index"
-          class="grid grid-cols-5 px-4 h-[46px] rounded-xl text-[13px] items-center transition-colors hover:bg-gray-50 border border-transparent hover:border-gray-100"
-          :class="index % 2 === 0 ? 'bg-[#FAFBFC]' : 'bg-white'"
-        >
-          <div class="font-bold text-[#1E0D01] col-span-1 truncate pr-2">
-            {{ item.usuario || '—' }}
-          </div>
-          <div class="text-gray-500 col-span-1 capitalize">{{ item.tipo }}</div>
-          <div class="text-gray-500 col-span-2 truncate pr-2">{{ item.veiculo }}</div>
-          <div
-            class="col-span-1 flex items-center justify-end gap-3 text-[#1E0D01] font-medium font-mono"
-          >
-            {{ item.hora }}
-            <span
-              :class="[
-                'px-2 py-0.5 rounded text-[10px] uppercase font-bold w-16 text-center',
-                item.status === 'Autorizado'
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-orange-100 text-orange-700',
-              ]"
-            >
-              {{ item.status === 'Autorizado' ? 'Auto' : 'Manual' }}
-            </span>
-          </div>
-        </div>
-      </div>
+      <p v-else-if="!acessosVisiveis.length" class="historico-vazio">
+        {{ historicoAberto && (buscaPlaca || filtroSentido) ? 'Nenhum acesso para esses filtros.' : 'Nenhum acesso registrado.' }}
+      </p>
+      <table v-else class="historico-tabela">
+        <thead>
+          <tr><th scope="col">Placa</th><th scope="col">Horário</th><th scope="col">Sentido</th><th scope="col">Registro</th></tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in acessosVisiveis" :key="item.id">
+            <td class="historico-placa">{{ formatarPlaca(item.placa) }}</td>
+            <td class="historico-hora"><span v-if="item.data">{{ item.data.slice(0, 5) }} · </span>{{ item.hora.slice(0, 5) }}</td>
+            <td><span class="historico-sentido">
+              <ArrowDownLeft v-if="item.direcao === 'entrada'" :size="16" aria-hidden="true" />
+              <ArrowUpRight v-else :size="16" aria-hidden="true" />
+              {{ item.direcao === 'entrada' ? 'Entrada' : 'Saída' }}
+            </span></td>
+            <td class="historico-modo">{{ item.modo }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <nav v-if="historicoAberto && (paginaHistorico > 1 || proximaPagina)" class="historico-paginacao"
+        aria-label="Páginas do histórico">
+        <button class="portaria-link" type="button" :disabled="paginaHistorico === 1 || carregandoHistorico"
+          @click="mudarPagina(-1)">Anterior</button>
+        <span>Página {{ paginaHistorico }}</span>
+        <button class="portaria-link" type="button" :disabled="!proximaPagina || carregandoHistorico"
+          @click="mudarPagina(1)">Próxima</button>
+      </nav>
     </section>
   </div>
 </template>
-
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import {
+  ArrowDownLeft, ArrowUpRight, ArrowRight, ChevronDown, CircleCheck,
+  Clock3, Radio, ScanLine, TriangleAlert, WifiOff,
+} from 'lucide-vue-next'
 import { fetchApi } from '../utils/api'
 import { getAuthToken } from '@/utils/authStorage'
 import { notify } from '@/utils/feedback'
 
-const emit = defineEmits(['abrir-cadastro-rapido', 'acesso-registrado'])
+const emit = defineEmits(['abrir-cadastro-rapido', 'acesso-registrado', 'limpar-resultado'])
 const props = defineProps<{
   camada?: number
   visionResult?: {
-    placa_recomendada?: string
-    confianca_recomendada?: number
-    liberacao_automatica?: boolean
+    placa_recomendada?: string | null
+    imagem_placa?: string
     status?: 'conhecido' | 'desconhecido' | 'revisao'
     isSaida?: boolean
   } | null
@@ -392,22 +182,41 @@ interface EventoLPR {
   placa: string
   status: 'conhecido' | 'desconhecido' | 'revisao'
   isSaida?: boolean
+  registrado?: boolean
   horaStr: string
   veiculo?: { marca: string; modelo: string; cor: string }
-  usuario?: { nome: string; tipo: string; matricula?: string; fotoUrl?: string }
+  usuario?: { nome: string; tipo: string }
 }
 
-interface HistoricoItem {
-  usuario: string
-  tipo: string
-  veiculo: string
+interface RegistroHistorico {
+  _id: string
+  placa: string
+  data?: string
+  horaEntrada: string
+  horaSaida?: string | null
+  dataSaida?: string | null
+  isManual: boolean
+  saidaManual?: boolean | null
+}
+
+type Direcao = 'entrada' | 'saida'
+
+interface AcessoHistorico {
+  id: string
+  placa: string
+  data?: string
   hora: string
-  horaSaida?: string
-  placaRaw?: string
-  status: 'Autorizado' | 'Manual'
+  direcao: Direcao
+  modo: string
 }
 
 const eventoLPR = ref<EventoLPR | null>(null)
+const leituraSemPlaca = ref('')
+const imagemFalhou = ref(false)
+const registrandoAcesso = ref(false)
+const mensagemRegistro = ref('')
+const erroRegistro = ref('')
+let confirmacaoId: string | undefined
 const filaLPR = ref<EventoLPR[]>([])
 let eventSource: EventSource | null = null
 const sseConectado = ref(false)
@@ -415,53 +224,131 @@ const workerOnline = ref(false)
 let reconexaoTimer: number | null = null
 let tentativasReconexao = 0
 let workerHealthTimer: number | null = null
+let avancoTimer: number | null = null
+let ultimaConsultaHistorico = 0
+
+const horaLocal = (data: Date) => data.toLocaleTimeString('pt-BR', {
+  timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', second: '2-digit',
+})
 
 watch(
   visionResult,
   (resultado) => {
-    if (!resultado?.placa_recomendada) {
+    if (camada.value !== 2) return
+    confirmacaoId = undefined
+    imagemFalhou.value = false
+    leituraSemPlaca.value = ''
+    erroRegistro.value = ''
+    if (resultado) mensagemRegistro.value = ''
+    if (!resultado?.placa_recomendada || !resultado.status) {
       eventoLPR.value = null
+      if (resultado?.status) leituraSemPlaca.value = horaLocal(new Date())
       return
     }
 
     eventoLPR.value = {
       placa: resultado.placa_recomendada,
-      status: resultado.status === 'desconhecido'
-        ? 'desconhecido'
-        : resultado.status === 'revisao'
-          ? 'revisao'
-          : 'conhecido',
+      status: resultado.status,
       isSaida: resultado.isSaida,
-      horaStr: new Date().toLocaleTimeString('pt-BR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      }),
+      horaStr: horaLocal(new Date()),
     }
   },
   { immediate: true },
 )
 
-const historico = ref<HistoricoItem[]>([])
+const historico = ref<RegistroHistorico[]>([])
+const historicoPaginado = ref<RegistroHistorico[]>([])
+const historicoAberto = ref(false)
+const paginaHistorico = ref(1)
+const proximaPagina = ref(false)
 const carregandoHistorico = ref(false)
+const erroHistorico = ref(false)
+const buscaPlaca = ref('')
+const filtroSentido = ref<Direcao | ''>('')
 const placasCadastradas = ref<string[]>([])
 
-const textoStatusCamera = computed(() => {
-  if (filaLPR.value.length > 0 && !eventoLPR.value) return 'processando fila...'
-  if (filaLPR.value.length > 0) return `+${filaLPR.value.length} na fila`
-  if (!eventoLPR.value) return 'próxima leitura em breve'
-  if (eventoLPR.value.status === 'conhecido') return 'veículo liberado'
-  return 'aguardando resolução'
+const leituraDisponivel = computed(() => camada.value === 2 ? workerOnline.value : sseConectado.value)
+const imagemPlaca = computed(() => {
+  const imagem = visionResult.value?.imagem_placa
+  if (camada.value !== 2 || imagemFalhou.value || (!eventoLPR.value && !leituraSemPlaca.value)
+    || typeof imagem !== 'string' || imagem.length > 80_023) return null
+  return /^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(imagem) ? imagem : null
+})
+const dadosVeiculo = computed(() => {
+  const veiculo = eventoLPR.value?.veiculo
+  return veiculo ? [veiculo.marca, veiculo.modelo, veiculo.cor].filter(Boolean).join(' · ') : ''
 })
 
-const cameraOnline = computed(() => simuladorAtivo.value && sseConectado.value)
-const cameraStatusLabel = computed(() => {
-  if (!simuladorAtivo.value) return 'Robô pausado'
-  return sseConectado.value ? 'Câmera online' : 'SSE desconectado'
+const estadoAtendimento = computed(() => {
+  switch (eventoLPR.value?.status) {
+    case 'conhecido':
+      if (!eventoLPR.value.registrado) {
+        return {
+          classe: 'is-success', icone: CircleCheck, rotulo: 'Placa reconhecida',
+          orientacao: 'Placa identificada no controle de acesso.',
+        }
+      }
+      return {
+        classe: 'is-success', icone: CircleCheck, rotulo: 'Registrado',
+        orientacao: eventoLPR.value.isSaida ? 'Saída registrada automaticamente.' : 'Entrada registrada automaticamente.',
+      }
+    case 'revisao':
+      return {
+        classe: 'is-warning', icone: TriangleAlert, rotulo: 'Em revisão',
+        orientacao: 'Confira a placa e o sentido da passagem antes de registrar.',
+      }
+    case 'desconhecido':
+      return {
+        classe: 'is-warning', icone: TriangleAlert, rotulo: 'Placa não cadastrada',
+        orientacao: 'Confira a passagem e escolha como registrar o acesso.',
+      }
+  }
+  if (leituraSemPlaca.value) {
+    return {
+      classe: 'is-warning', icone: TriangleAlert, rotulo: 'Sem leitura de placa',
+      orientacao: 'Confira o veículo na portaria. Nenhum acesso foi registrado.',
+    }
+  }
+  return leituraDisponivel.value
+    ? {
+        classe: 'is-neutral', icone: Clock3, rotulo: 'Aguardando veículo',
+        orientacao: 'As próximas leituras serão exibidas aqui.',
+      }
+    : {
+        classe: 'is-warning', icone: WifiOff, rotulo: 'Aguardando conexão',
+        orientacao: 'Acompanhe as passagens pela portaria enquanto a leitura estiver indisponível.',
+      }
+})
+
+const acessosVisiveis = computed(() => {
+  const modo = (manual?: boolean | null) => manual == null ? 'Não informado' : manual ? 'Manual' : 'Automático'
+  const ordem = (item: AcessoHistorico) => `${item.data?.split('/').reverse().join('') ?? ''}${item.hora}`
+  const acessos: AcessoHistorico[] = []
+  const registros = historicoAberto.value ? historicoPaginado.value : historico.value
+  for (const item of registros) {
+    acessos.push({
+      id: item._id + '-entrada', placa: item.placa, data: item.data,
+      hora: item.horaEntrada, direcao: 'entrada', modo: modo(item.isManual),
+    })
+    if (item.horaSaida) {
+      acessos.push({
+        id: item._id + '-saida', placa: item.placa, data: item.dataSaida || item.data,
+        hora: item.horaSaida, direcao: 'saida', modo: modo(item.saidaManual),
+      })
+    }
+  }
+  acessos.sort((a, b) => ordem(b).localeCompare(ordem(a)) || Number(b.direcao === 'saida') - Number(a.direcao === 'saida'))
+  if (!historicoAberto.value) return acessos.slice(0, 5)
+  return acessos.filter((item) => !filtroSentido.value || item.direcao === filtroSentido.value)
 })
 
 watch(camada, (novaCamada, camadaAnterior) => {
   if (novaCamada === camadaAnterior) return
+  eventoLPR.value = null
+  leituraSemPlaca.value = ''
+  mensagemRegistro.value = ''
+  erroRegistro.value = ''
+  if (avancoTimer) window.clearTimeout(avancoTimer)
   if (novaCamada === 2) {
     verificarWorker()
     workerHealthTimer = window.setInterval(verificarWorker, 15000)
@@ -470,7 +357,6 @@ watch(camada, (novaCamada, camadaAnterior) => {
     eventSource = null
     sseConectado.value = false
     pausarSimuladorRobo()
-    eventoLPR.value = null
     filaLPR.value = []
   } else {
     workerOnline.value = false
@@ -491,7 +377,7 @@ const verificarWorker = async () => {
 }
 
 const formatarPlaca = (placa: string) => {
-  if (placa.length === 7) {
+  if (/^[A-Z]{3}[0-9]{4}$/.test(placa)) {
     return `${placa.slice(0, 3)}-${placa.slice(3, 7)}`
   }
   return placa
@@ -502,11 +388,12 @@ const processarFila = () => {
     eventoLPR.value = filaLPR.value.shift() || null
 
     if (eventoLPR.value?.status === 'conhecido') {
+      const exibido = eventoLPR.value
       emit('acesso-registrado', 'auto')
       fetchHistoricoSeguranca()
 
-      setTimeout(() => {
-        resetarLeitura()
+      avancoTimer = window.setTimeout(() => {
+        if (eventoLPR.value === exibido) resetarLeitura()
       }, 5000)
     }
   }
@@ -523,64 +410,115 @@ const acaoCadastrarLiberar = () => {
 }
 
 const fetchHistoricoSeguranca = async () => {
+  const consulta = ++ultimaConsultaHistorico
   carregandoHistorico.value = true
+  erroHistorico.value = false
   try {
-    const res = await fetchApi('/api/users/admin/acessos')
-    if (res.ok) {
-      const dados = await res.json()
-      historico.value = dados.map((d: any) => {
-        const stringVeiculo = d.marca
-          ? `${d.marca} | ${d.modelo} | ${d.cor} | ${d.placa || d.carro}`
-          : d.carro || d.placa || 'Desconhecido'
-
-        return {
-          usuario: d.nome !== 'Desconhecido' ? d.nome : '—',
-          tipo: d.tipo,
-          veiculo: stringVeiculo,
-          hora: d.horaEntrada,
-          horaSaida: d.horaSaida,
-          placaRaw: d.placa || d.carro,
-          status: d.isManual ? 'Manual' : 'Autorizado',
-        }
-      })
+    const consultaPaginada = historicoAberto.value
+    const parametros = new URLSearchParams({ ordem: 'atividade' })
+    if (consultaPaginada) {
+      parametros.set('pagina', String(paginaHistorico.value))
+      parametros.set('placa', buscaPlaca.value)
+      parametros.set('sentido', filtroSentido.value)
     }
-  } catch (e) {
-    notify('Não foi possível carregar o histórico de acesso.', 'error')
+    const res = await fetchApi(`/api/users/admin/acessos?${parametros}`)
+    if (!res.ok) throw new Error('Histórico indisponível')
+    const dados = await res.json()
+    if (consulta !== ultimaConsultaHistorico) return
+    if (consultaPaginada) {
+      historicoPaginado.value = dados.registros
+      proximaPagina.value = dados.proxima
+    } else {
+      historico.value = dados
+    }
+  } catch {
+    if (consulta === ultimaConsultaHistorico) erroHistorico.value = true
   } finally {
-    carregandoHistorico.value = false
+    if (consulta === ultimaConsultaHistorico) carregandoHistorico.value = false
   }
 }
 
-const acaoLiberarSemCadastro = async () => {
-  if (!eventoLPR.value) return
+let filtroTimer: number | undefined
+const recarregarPagina = () => {
+  window.clearTimeout(filtroTimer)
+  historicoPaginado.value = []
+  fetchHistoricoSeguranca()
+}
+
+const alternarHistorico = () => {
+  historicoAberto.value = !historicoAberto.value
+  paginaHistorico.value = 1
+  proximaPagina.value = false
+  recarregarPagina()
+}
+
+const mudarPagina = (delta: number) => {
+  paginaHistorico.value += delta
+  recarregarPagina()
+}
+
+watch([buscaPlaca, filtroSentido], () => {
+  window.clearTimeout(filtroTimer)
+  if (historicoAberto.value) {
+    paginaHistorico.value = 1
+    proximaPagina.value = false
+    filtroTimer = window.setTimeout(recarregarPagina, 220)
+  }
+})
+
+const acaoLiberarSemCadastro = async (direcao?: Direcao) => {
+  const atendimento = eventoLPR.value
+  if (!atendimento || registrandoAcesso.value) return
+  if (atendimento.status !== (direcao ? 'revisao' : 'desconhecido')) return
+  registrandoAcesso.value = true
+  erroRegistro.value = ''
+  mensagemRegistro.value = ''
+  if (direcao) {
+    confirmacaoId ??= Array.from(crypto.getRandomValues(new Uint8Array(16)),
+      (byte) => byte.toString(16).padStart(2, '0')).join('')
+  }
 
   try {
     const res = await fetchApi('/api/users/admin/acesso-manual', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        placa: eventoLPR.value.placa,
-        marca: eventoLPR.value.veiculo?.marca || 'Desconhecida',
-        modelo: eventoLPR.value.veiculo?.modelo || 'Desconhecido',
-        cor: eventoLPR.value.veiculo?.cor || 'Desconhecida',
+        placa: atendimento.placa,
+        marca: atendimento.veiculo?.marca || 'Desconhecida',
+        modelo: atendimento.veiculo?.modelo || 'Desconhecido',
+        cor: atendimento.veiculo?.cor || 'Desconhecida',
         isModoPortaria: true,
+        ...(direcao && { confirmacao_visao: { id: confirmacaoId, direcao } }),
       }),
     })
 
+    const retorno = await res.json().catch(() => ({}))
     if (res.ok) {
       emit('acesso-registrado', 'manual')
-      resetarLeitura()
       fetchHistoricoSeguranca()
+      if (eventoLPR.value !== atendimento) return
+      const sentido = retorno.direcao ?? direcao
+      const horario = typeof retorno.hora === 'string' ? ` às ${retorno.hora.slice(0, 5)}` : ''
+      const acao = sentido === 'saida' ? 'Saída registrada' : sentido === 'entrada' ? 'Entrada registrada' : 'Acesso registrado'
+      resetarLeitura()
+      mensagemRegistro.value = `${acao}${horario} · ${formatarPlaca(atendimento.placa)}`
     } else {
-      notify('Erro ao registrar liberação manual.', 'error')
+      if (eventoLPR.value === atendimento) erroRegistro.value = retorno.erro || 'Não foi possível registrar o acesso.'
     }
-  } catch (e) {
-    notify('Falha de comunicação ao registrar a liberação manual.', 'error')
+  } catch {
+    if (eventoLPR.value === atendimento) erroRegistro.value = 'Falha de comunicação. Confira a conexão e tente novamente.'
+  } finally {
+    registrandoAcesso.value = false
   }
 }
 
 const resetarLeitura = () => {
+  if (avancoTimer) window.clearTimeout(avancoTimer)
+  avancoTimer = null
   eventoLPR.value = null
+  leituraSemPlaca.value = ''
+  erroRegistro.value = ''
+  if (camada.value === 2 && visionResult.value) emit('limpar-resultado')
   processarFila()
 }
 
@@ -622,6 +560,8 @@ const conectarSSE = () => {
       placa: string
       status: EventoLPR['status']
       timestamp: string
+      isSaida?: boolean
+      registrado?: boolean
       marca?: string
       modelo?: string
       cor?: string
@@ -637,11 +577,9 @@ const conectarSSE = () => {
     filaLPR.value.push({
       placa: data.placa,
       status: data.status,
-      horaStr: new Date(data.timestamp).toLocaleTimeString('pt-BR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      }),
+      isSaida: data.isSaida,
+      registrado: data.registrado,
+      horaStr: horaLocal(new Date(data.timestamp)),
       veiculo: { marca: data.marca ?? '', modelo: data.modelo ?? '', cor: data.cor ?? '' },
       usuario: data.motorista
         ? { nome: data.motorista.nome, tipo: data.motorista.tipo }
@@ -701,7 +639,7 @@ const iniciarSimuladorRobo = () => {
       let placaAlvo = gerarPlacaAleatoria()
       const carroMock = gerarCarroAleatorio()
 
-      const carrosDentro = historico.value.filter((h) => !h.horaSaida && h.placaRaw)
+      const carrosDentro = historico.value.filter((h) => !h.horaSaida && h.placa)
 
       const chance = Math.random()
 
@@ -709,8 +647,8 @@ const iniciarSimuladorRobo = () => {
         const indexAleatorio = Math.floor(Math.random() * carrosDentro.length)
         const carroSorteado = carrosDentro[indexAleatorio]
 
-        if (carroSorteado && carroSorteado.placaRaw) {
-          placaAlvo = carroSorteado.placaRaw
+        if (carroSorteado?.placa) {
+          placaAlvo = carroSorteado.placa
         }
       } else if (placasCadastradas.value.length > 0 && chance < 0.8) {
         const indexAleatorio = Math.floor(Math.random() * placasCadastradas.value.length)
@@ -765,6 +703,8 @@ onUnmounted(() => {
   }
   if (reconexaoTimer) window.clearTimeout(reconexaoTimer)
   if (workerHealthTimer) window.clearInterval(workerHealthTimer)
+  if (avancoTimer) window.clearTimeout(avancoTimer)
+  window.clearTimeout(filtroTimer)
   pausarSimuladorRobo()
 })
 
@@ -777,18 +717,420 @@ defineExpose({
 </script>
 
 <style scoped>
-.animate-fadeIn {
-  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.portaria {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  color: #342216;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
+.portaria-cabecalho,
+.portaria-card-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.portaria-cabecalho {
+  min-height: 68px;
+}
+
+.portaria-cabecalho h2 {
+  color: var(--color-carcara-marrom);
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 2.8vw, 2.65rem);
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.portaria-cabecalho p,
+.atendimento-orientacao {
+  color: #625247;
+  font-size: 0.94rem;
+  line-height: 1.55;
+}
+
+.portaria-cabecalho p {
+  margin-top: 4px;
+}
+
+.portaria-card {
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #ead9cc;
+  border-radius: 22px;
+  box-shadow: 0 6px 20px rgb(74 46 27 / 5%);
+}
+
+.portaria-card-topo {
+  min-height: 62px;
+  padding: 10px 24px;
+  border-bottom: 1px solid #eee2d8;
+}
+
+.portaria-card-topo h3 {
+  color: var(--color-carcara-marrom);
+  font-size: 1.12rem;
+  font-weight: 750;
+}
+
+.portaria-status {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  gap: 7px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 0.835rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.portaria-status.is-neutral {
+  background: #f6eee8;
+  border-color: #ead9cc;
+  color: #594133;
+}
+
+.portaria-status.is-success {
+  background: #e9f5ed;
+  border-color: #c9e5d1;
+  color: #235b37;
+}
+
+.portaria-status.is-warning {
+  background: #fff2d7;
+  border-color: #efd59a;
+  color: #714606;
+}
+
+.atendimento-grade {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: clamp(24px, 3vw, 44px);
+  align-items: start;
+  padding: clamp(22px, 2.5vw, 34px) 24px;
+}
+
+.atendimento-conteudo {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+}
+
+.atendimento-placa,
+.atendimento-sem-placa {
+  overflow-wrap: anywhere;
+  margin: 11px 0 4px;
+  color: #342216;
+  font-weight: 800;
+  line-height: 1.12;
+}
+
+.atendimento-placa {
+  font-size: clamp(2.5rem, 4.25vw, 4.25rem);
+  letter-spacing: 0.045em;
+  font-variant-numeric: tabular-nums;
+}
+
+.atendimento-sem-placa {
+  max-width: 24ch;
+  font-size: clamp(1.45rem, 2.35vw, 2.05rem);
+}
+
+.atendimento-hora,
+.historico-sentido {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.atendimento-hora {
+  margin-top: 6px;
+  color: #625247;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.atendimento-orientacao {
+  margin-top: 10px;
+}
+
+.atendimento-dados {
+  display: grid;
+  gap: 9px;
+  font-size: 0.88rem;
+}
+
+.atendimento-dados dt {
+  color: #625247;
+  font-weight: 650;
+}
+
+.atendimento-dados dd {
+  font-weight: 600;
+}
+
+.atendimento-imagem {
+  min-width: 0;
+  min-height: 176px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid #eee2d8;
+  border-radius: 16px;
+  padding: 16px;
+  background: #faf5f0;
+  color: #625247;
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.atendimento-imagem img {
+  display: block;
+  width: 100%;
+  max-height: 158px;
+  object-fit: contain;
+}
+
+.atendimento-imagem.is-empty {
+  align-items: center;
+}
+
+.atendimento-imagem.is-empty svg {
+  color: #9a694b;
+}
+
+.portaria-acoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 174px), 1fr));
+  gap: 12px;
+}
+
+.portaria-botao,
+.portaria-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.portaria-botao {
+  min-height: 50px;
+  border: 1px solid #c6916b;
+  border-radius: 12px;
+  padding: 9px 13px;
+  color: #683718;
+  background: #fff;
+}
+
+.portaria-botao.is-primary {
+  background: var(--color-carcara-laranja);
+  color: #27150a;
+  border-color: var(--color-carcara-laranja);
+}
+
+.portaria-botao:hover:not(:disabled) {
+  background: #fff0e4;
+}
+
+.portaria-botao.is-primary:hover:not(:disabled) {
+  background: #f06e12;
+}
+
+.portaria-link {
+  color: #8a3b09;
+  font-size: 0.9rem;
+  padding: 4px 6px;
+}
+
+.portaria-link:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.portaria button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.portaria :is(button, input, select):focus-visible {
+  outline: 3px solid #97613f;
+  outline-offset: 3px;
+}
+
+.atendimento-rodape {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  min-height: 52px;
+  padding: 5px 24px;
+  border-top: 1px solid #eee2d8;
+  color: #625247;
+  font-size: 0.9rem;
+}
+
+.atendimento-rodape button {
+  margin-left: auto;
+}
+
+.portaria-confirmacao {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #235b37;
+  font-weight: 700;
+}
+
+.portaria-erro {
+  color: #a12d23;
+}
+
+.historico-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px 24px;
+  background: #faf5f0;
+}
+
+.historico-filtros label {
+  display: grid;
+  gap: 4px;
+  color: #594133;
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+
+.historico-paginacao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  border-top: 1px solid #eee2d8;
+  padding: 6px 16px;
+  color: #625247;
+  font-size: 0.875rem;
+}
+
+.historico-filtros :is(input, select) {
+  min-height: 44px;
+  border: 1px solid #cfae98;
+  border-radius: 9px;
+  background: #fff;
+  padding: 8px 10px;
+  color: #342216;
+}
+
+.historico-vazio {
+  padding: 22px 24px;
+  color: #625247;
+  font-size: 0.925rem;
+}
+
+.historico-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.historico-tabela th,
+.historico-tabela td {
+  padding: 12px 8px;
+  vertical-align: middle;
+}
+
+.historico-tabela th:first-child,
+.historico-tabela td:first-child {
+  padding-left: 24px;
+}
+
+.historico-tabela th:last-child,
+.historico-tabela td:last-child {
+  padding-right: 24px;
+}
+
+.historico-tabela th {
+  background: #faf5f0;
+  color: #625247;
+  font-weight: 700;
+}
+
+.historico-tabela tr + tr td {
+  border-top: 1px solid #eee2d8;
+}
+
+.historico-placa {
+  font-weight: 750;
+}
+
+.historico-hora,
+.historico-modo {
+  color: #625247;
+  font-variant-numeric: tabular-nums;
+}
+
+.historico-sentido svg {
+  color: #8a3b09;
+}
+
+@media (max-width: 680px) {
+  .atendimento-grade {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+
+  .atendimento-conteudo {
+    display: contents;
+  }
+
+  .atendimento-imagem {
+    min-height: 112px;
+    order: 1;
+  }
+
+  .atendimento-dados {
+    order: 2;
+  }
+
+  .portaria-acoes {
+    order: 3;
+  }
+
+  .portaria-card-topo,
+  .atendimento-grade,
+  .atendimento-rodape,
+  .historico-vazio,
+  .historico-filtros {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .historico-tabela {
+    font-size: 0.8rem;
+  }
+
+  .historico-tabela th:first-child,
+  .historico-tabela td:first-child {
+    padding-left: 12px;
+  }
+
+  .historico-tabela th:last-child,
+  .historico-tabela td:last-child {
+    padding-right: 12px;
+  }
+
+  .historico-hora span {
+    display: block;
   }
 }
 </style>

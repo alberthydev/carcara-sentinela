@@ -12,6 +12,23 @@ info:
 
 components:
   schemas:
+    RegistroHistorico:
+      type: object
+      properties:
+        _id: { type: string }
+        nome: { type: string }
+        tipo: { type: string }
+        carro: { type: string }
+        placa: { type: string }
+        marca: { type: string }
+        modelo: { type: string }
+        cor: { type: string }
+        data: { type: string }
+        horaEntrada: { type: string }
+        horaSaida: { type: string, nullable: true }
+        dataSaida: { type: string, nullable: true }
+        isManual: { type: boolean }
+        saidaManual: { type: boolean, nullable: true }
     User:
       type: object
       properties:
@@ -127,6 +144,9 @@ components:
           description: '1 para instituições com LPR; 2 para instituições sem LPR'
 
   securitySchemes:
+    visionToken:
+      type: http
+      scheme: bearer
     bearerAuth:
       type: http
       scheme: bearer
@@ -548,27 +568,40 @@ paths:
       summary: Listar histórico geral de acessos
       tags: [Admin]
       security: [{ bearerAuth: [] }]
+      parameters:
+        - name: ordem
+          in: query
+          description: Use atividade para ordenar os registros pela alteração mais recente.
+          schema: { type: string, enum: [atividade] }
+        - name: pagina
+          in: query
+          description: Solicita até 20 registros e informa se há outra página.
+          schema: { type: integer, minimum: 1, maximum: 100000 }
+        - name: placa
+          in: query
+          description: Filtro por trecho da placa quando a paginação estiver ativa.
+          schema: { type: string }
+        - name: sentido
+          in: query
+          description: Com paginação, saida restringe a consulta a acessos encerrados.
+          schema: { type: string, enum: [entrada, saida] }
       responses:
         '200':
           description: Lista de acessos formatada
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    _id: { type: string }
-                    nome: { type: string }
-                    tipo: { type: string }
-                    carro: { type: string }
-                    placa: { type: string }
-                    marca: { type: string }
-                    modelo: { type: string }
-                    cor: { type: string }
-                    horaEntrada: { type: string }
-                    horaSaida: { type: string, nullable: true }
-                    isManual: { type: boolean }
+                oneOf:
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/RegistroHistorico'
+                  - type: object
+                    properties:
+                      registros:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/RegistroHistorico'
+                      proxima: { type: boolean }
 
   /admin/vagas-ocupadas:
     get:
@@ -674,7 +707,16 @@ paths:
                 cor: { type: string }
                 nomeMotorista: { type: string }
                 tipoMotorista: { type: string }
+                confirmacao_visao:
+                  type: object
+                  description: Revisão humana na Layer 2 com sentido explícito. Reenvie com o mesmo ID.
+                  required: [id, direcao]
+                  properties:
+                    id: { type: string, pattern: '^[a-f0-9]{32}$' }
+                    direcao: { type: string, enum: [entrada, saida] }
       responses:
+        '409':
+          description: Confirmação incompatível com o estado do acesso ou com o ID já enviado
         '200':
           description: Acesso manual registrado com sucesso
           content:
@@ -683,6 +725,8 @@ paths:
                 type: object
                 properties:
                   mensagem: { type: string }
+                  direcao: { type: string, enum: [entrada, saida] }
+                  hora: { type: string, nullable: true }
         '500':
           description: Erro ao registrar acesso manual
           content:
@@ -1012,26 +1056,76 @@ paths:
       summary: Receber resultado do worker de visão computacional
       tags: [LPR e Câmera]
       security: [{ bearerAuth: [] }]
-      description: Disponível somente para instituições Layer 2.
+      description: >-
+        Disponível somente para instituições Layer 2. Consolidado legado e evidência
+        versão 1 seguem para revisão sem consultar ou gravar acessos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  not: { required: [versao_evidencia] }
+                  required: [confianca_recomendada, liberacao_automatica]
+                  properties:
+                    placa_recomendada: { type: string, nullable: true }
+                    confianca_recomendada: { type: number, minimum: 0, maximum: 1 }
+                    liberacao_automatica: { type: boolean }
+                    deteccoes: { type: array, items: { type: object } }
+                - type: object
+                  required: [versao_evidencia, liberacao_automatica]
+                  properties:
+                    versao_evidencia: { type: integer, enum: [1] }
+                    liberacao_automatica: { type: boolean, enum: [false] }
+                    placa_recomendada: { type: string, nullable: true }
+      responses:
+        '200':
+          description: Resultado recebido para revisão
+        '400':
+          description: Resultado inválido
+        '403':
+          description: Instituição não está na Layer 2
+
+  /visao/passagem:
+    post:
+      summary: Receber decisão de passagem do worker autorizado
+      tags: [LPR e Câmera]
+      security: [{ visionToken: [] }]
+      description: >-
+        Layer 2. Reenvie a mesma decisão com o mesmo evento_id. Entradas requerem
+        ausência de acesso aberto. Saídas requerem exatamente um acesso aberto.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [placa_recomendada, confianca_recomendada, liberacao_automatica]
+              required: [versao, camera_id, evento_id, estado, placa, direcao, quadros, leituras, confianca, liberacao_automatica]
               properties:
-                placa_recomendada: { type: string }
-                confianca_recomendada: { type: number, minimum: 0, maximum: 1 }
+                versao: { type: integer, enum: [2] }
+                camera_id: { type: string, pattern: '^[a-zA-Z0-9_.-]{1,64}$' }
+                evento_id: { type: string, pattern: '^[a-f0-9]{64}$' }
+                estado: { type: string, enum: [confirmada, revisao] }
+                placa: { type: string, nullable: true }
+                direcao: { type: string, enum: [entrada, saida], nullable: true }
+                quadros: { type: integer, minimum: 0 }
+                leituras: { type: integer, minimum: 0 }
+                confianca: { type: number, minimum: 0, maximum: 1 }
                 liberacao_automatica: { type: boolean }
-                deteccoes: { type: array, items: { type: object } }
       responses:
         '200':
-          description: Resultado recebido, revisado ou registrado
+          description: Status conhecido (registrado ou repetido), desconhecido ou revisao
         '400':
-          description: Resultado inválido
+          description: Identificação inválida
+        '401':
+          description: Credencial do worker inválida
         '403':
           description: Instituição não está na Layer 2
+        '409':
+          description: Revisão por conflito de estado ou de identificador
+        '503':
+          description: Ingestão automática desativada
   
   # ================= VEÍCULOS =================
   /{id}/veiculos:

@@ -249,6 +249,34 @@ describe("configuração e fluxo LPR da Layer 1", () => {
   });
 
   describe("integração do worker na Layer 2", () => {
+    it("recebe evidência YOLO para revisão antes de consultar ou alterar acessos", async () => {
+      mockLayer2();
+      let operacoes = 0;
+      replaceMethod(RegistroAcesso, "find", async () => { operacoes++; return []; });
+      replaceMethod(RegistroAcesso, "create", async () => { operacoes++; });
+      replaceMethod(User, "findOne", async () => { operacoes++; return null; });
+
+      const resultado = {
+        versao_evidencia: 1,
+        placa_recomendada: "QJF5373",
+        confianca_recomendada: 1,
+        liberacao_automatica: false,
+        quadros: [],
+      };
+      const enviar = (body: object) => request(app)
+        .post("/api/users/visao/evento")
+        .set("Authorization", ["Bearer", token()].join(" "))
+        .send(body);
+      const resposta = await enviar(resultado);
+      assert.equal(resposta.status, 200);
+      assert.equal(resposta.body.status, "revisao");
+      assert.equal(resposta.body.liberacao_automatica, false);
+      assert.equal((await enviar({ ...resultado, placa_recomendada: null })).status, 200);
+      assert.equal((await enviar({ ...resultado, liberacao_automatica: true })).status, 400);
+      assert.equal((await enviar({ ...resultado, versao_evidencia: 2 })).status, 400);
+      assert.equal(operacoes, 0);
+    });
+
     it("bloqueia o endpoint de visão quando a instituição está na Layer 1", async () => {
       mockLayer1();
 
@@ -264,94 +292,41 @@ describe("configuração e fluxo LPR da Layer 1", () => {
       assert.equal(resposta.status, 403);
     });
 
-    it("encaminha resultado de placa não cadastrada para intervenção", async () => {
+    it("encaminha qualquer consolidado legado à revisão, sem gravar entrada ou saída", async () => {
       mockLayer2();
-      replaceMethod(RegistroAcesso, "find", async () => []);
-      replaceMethod(User, "findOne", async () => null);
-
-      const resposta = await request(app)
-        .post("/api/users/visao/evento")
-        .set("Authorization", ["Bearer", token()].join(" "))
-        .send({
-          placa_recomendada: "QJF5373",
-          confianca_recomendada: 0.5,
-          liberacao_automatica: false,
-          deteccoes: [{ placa: "QJF8373" }],
-        });
-
-      assert.equal(resposta.status, 200);
-      assert.equal(resposta.body.status, "desconhecido");
-      assert.equal(resposta.body.placa, "QJF5373");
+      let operacoes = 0;
+      for (const metodo of ["find", "findOne", "create", "updateOne"]) {
+        replaceMethod(RegistroAcesso, metodo, async () => { operacoes++; });
+      }
+      replaceMethod(User, "findOne", async () => { operacoes++; });
+      for (const liberacao of [false, true]) {
+        const resposta = await request(app)
+          .post("/api/users/visao/evento")
+          .set("Authorization", "Bearer " + token())
+          .send({
+            placa_recomendada: "QJF5373",
+            confianca_recomendada: liberacao ? 0.99 : 0.5,
+            liberacao_automatica: liberacao,
+          });
+        assert.equal(resposta.status, 200);
+        assert.equal(resposta.body.status, "revisao");
+        assert.equal(resposta.body.liberacao_automatica, false);
+      }
+      assert.equal(operacoes, 0);
     });
 
-    it("encaminha placa não cadastrada para intervenção manual", async () => {
+    it("recusa ingestão sem credencial dedicada e protege a Layer 1", async () => {
+      const segredo = "credencial-sintetica-para-testar-001";
+      const enviar = (credencial: string) => request(app).post("/api/users/visao/passagem")
+        .set("Authorization", "Bearer " + credencial).send({});
+      replaceEnv("VISION_INGEST_TOKEN", undefined);
+      assert.equal((await enviar(segredo)).status, 503);
+      replaceEnv("VISION_INGEST_TOKEN", segredo);
+      assert.equal((await enviar(token())).status, 401);
+      mockLayer1();
+      assert.equal((await enviar(segredo)).status, 403);
       mockLayer2();
-      replaceMethod(RegistroAcesso, "find", async () => []);
-      replaceMethod(User, "findOne", async () => null);
-
-      const resposta = await request(app)
-        .post("/api/users/visao/evento")
-        .set("Authorization", ["Bearer", token()].join(" "))
-        .send({
-          placa_recomendada: "ZZZ9999",
-          confianca_recomendada: 0.5,
-          liberacao_automatica: false,
-        });
-
-      assert.equal(resposta.status, 200);
-      assert.equal(resposta.body.status, "desconhecido");
-      assert.equal(resposta.body.placa, "ZZZ9999");
-    });
-
-    it("autoriza automaticamente placa cadastrada mesmo com confiança abaixo do limite", async () => {
-      mockLayer2();
-      replaceMethod(RegistroAcesso, "find", async () => []);
-      replaceMethod(User, "findOne", async () => ({
-        _id: "usuario-1",
-        nome: "Ana",
-        sobrenome: "Silva",
-        tipo: "servidor",
-        carros: [{ placa: "QJF5373", marca: "Fiat", modelo: "Argo", cor: "Azul" }],
-      }));
-      replaceMethod(RegistroAcesso, "create", async (dados: object) => dados);
-
-      const resposta = await request(app)
-        .post("/api/users/visao/evento")
-        .set("Authorization", ["Bearer", token()].join(" "))
-        .send({
-          placa_recomendada: "QJF5373",
-          confianca_recomendada: 0.5,
-          liberacao_automatica: false,
-        });
-
-      assert.equal(resposta.status, 200);
-      assert.equal(resposta.body.status, "conhecido");
-      assert.equal(resposta.body.liberacao_automatica, true);
-    });
-
-    it("registra a saída quando já existe uma entrada aberta", async () => {
-      mockLayer2();
-      const registro = {
-        placa: "QJF5373",
-        data: "02/11/2026",
-        horaSaida: null,
-        save: async () => registro,
-      };
-      replaceMethod(RegistroAcesso, "find", async () => [registro]);
-
-      const resposta = await request(app)
-        .post("/api/users/visao/evento")
-        .set("Authorization", ["Bearer", token()].join(" "))
-        .send({
-          placa_recomendada: "QJF5373",
-          confianca_recomendada: 0.5,
-          liberacao_automatica: false,
-        });
-
-      assert.equal(resposta.status, 200);
-      assert.equal(resposta.body.isSaida, true);
-      assert.equal(resposta.body.mensagem, "Saída Layer 2 registrada.");
-      assert.notEqual(registro.horaSaida, null);
+      assert.equal((await enviar(segredo)).status, 400);
     });
   });
 

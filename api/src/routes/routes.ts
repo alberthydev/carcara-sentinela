@@ -12,7 +12,7 @@ import { adicionarVeiculo, getVeiculos, agendarVisita, getVisitasUsuario, getHis
 import { Estudante } from "../models/Estudante";
 import { verificarToken } from "../middleware/authMiddleware";
 import { requerCamadaLpr, requerCamadaVisao } from "../middleware/camadaMiddleware";
-import { receberResultadoVisao } from "../controllers/visaoController";
+import { autenticarWorkerVisao, receberPassagemVisao, receberResultadoVisao } from "../controllers/visaoController";
 import { requerUsuarioDev } from "../middleware/devMiddleware";
 import { requerPapel, requerPropriaVisita, requerProprioUsuario } from "../middleware/authorizationMiddleware";
 
@@ -46,6 +46,7 @@ router.get("/validar-ifc/:cpf/:matricula", async (req: Request, res: Response) =
   }
 });
 
+router.post("/visao/passagem", autenticarWorkerVisao, requerCamadaVisao, receberPassagemVisao);
 router.use(verificarToken);
 
 // --- LPR e Câmera ---
@@ -61,7 +62,14 @@ router.put("/:id/perfil", requerProprioUsuario, atualizarPerfilProprio);
 router.get("/admin/acessos", requerPapel("admin", "seguranca", "dev"), getTodosAcessos);
 router.get("/admin/vagas-ocupadas", requerPapel("admin", "seguranca", "dev"), getVagasOcupadas);
 router.get("/admin/usuarios", requerPapel("admin", "dev"), getAllUsersAdmin);
-router.post("/admin/acesso-manual", requerPapel("admin", "seguranca", "dev"), registroManual);
+router.post(
+  "/admin/acesso-manual",
+  requerPapel("admin", "seguranca", "dev"),
+  (req, res, next) => req.body?.confirmacao_visao === undefined
+    ? next()
+    : requerCamadaVisao(req, res, next),
+  registroManual,
+);
 router.post("/admin/cadastro-rapido", requerPapel("admin", "seguranca", "dev"), cadastroRapidoPortaria);
 router.put("/admin/usuarios/:id", requerPapel("admin", "dev"), updateUserAdmin);
 

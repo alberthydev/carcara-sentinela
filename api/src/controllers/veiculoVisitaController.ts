@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import User from "../models/User";
 import Visita from "../models/Visita";
 import RegistroAcesso from "../models/RegistroAcesso";
+import { acessoPorPassagem } from "./persistenciaVisao";
 
 const lerVeiculo = (body: Record<string, unknown>) => {
   const placa = typeof body.placa === "string" ? body.placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, "") : "";
@@ -129,10 +130,28 @@ export const getTodosAcessos = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const acessos = await RegistroAcesso.find()
-      .sort({ createdAt: -1 })
-      .limit(50)
-      .lean();
+    const porAtividade = req.query.ordem === "atividade";
+    const pagina = typeof req.query.pagina === "string" ? Number(req.query.pagina) : undefined;
+    if (req.query.pagina !== undefined &&
+        (pagina === undefined || !Number.isSafeInteger(pagina) || pagina < 1 || pagina > 100_000)) {
+      res.status(400).json({ erro: "Informe uma página válida." });
+      return;
+    }
+    const placa = typeof req.query.placa === "string"
+      ? req.query.placa.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8)
+      : "";
+    const limite = pagina ? 20 : 50;
+    const consulta = RegistroAcesso.find({
+      ...(pagina && placa ? { placa: new RegExp(placa.split("").join("-?")) } : {}),
+      ...(pagina && req.query.sentido === "saida" ? { horaSaida: { $ne: null } } : {}),
+    })
+      .sort(porAtividade || pagina ? { updatedAt: -1, createdAt: -1, _id: -1 } : { createdAt: -1 })
+      .limit(pagina ? limite + 1 : limite);
+    if (pagina) consulta.skip((pagina - 1) * limite);
+    const acessos = await consulta.lean();
+    const temProxima = acessos.length > limite;
+    if (temProxima) acessos.pop();
+    const formatoData = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo" });
 
     const acessosFormatados = await Promise.all(
       acessos.map(async (acesso: any) => {
@@ -167,14 +186,19 @@ export const getTodosAcessos = async (
           marca: acesso.marca,
           modelo: acesso.modelo,
           cor: acesso.cor,
+          data: acesso.data,
           horaEntrada: acesso.horaEntrada,
           horaSaida: acesso.horaSaida,
+          dataSaida: acesso.horaSaida && acesso.updatedAt
+            ? formatoData.format(acesso.updatedAt)
+            : null,
+          saidaManual: acesso.saidaManual ?? null,
           isManual: !usuarioObj,
         };
       }),
     );
 
-    res.status(200).json(acessosFormatados);
+    res.status(200).json(pagina ? { registros: acessosFormatados, proxima: temProxima } : acessosFormatados);
   } catch (erro) {
     console.error("Erro FATAL ao buscar histórico do Admin:", erro);
     res.status(500).json({ erro: "Erro ao buscar histórico geral." });
@@ -186,13 +210,40 @@ export const registroManual = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const { placa, marca, modelo, cor, nomeMotorista, tipoMotorista } =
+    const { placa, marca, modelo, cor, nomeMotorista, tipoMotorista, confirmacao_visao } =
       req.body;
     const placaNormalizada = typeof placa === "string"
       ? placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, "")
       : "";
     if (!/^[A-Z0-9]{6,8}$/.test(placaNormalizada)) {
       res.status(400).json({ erro: "Informe uma placa válida." });
+      return;
+    }
+
+    if (confirmacao_visao !== undefined) {
+      const id = confirmacao_visao?.id;
+      const direcao = confirmacao_visao?.direcao;
+      if (typeof id !== "string" || !/^[a-f0-9]{32}$/.test(id) ||
+          (direcao !== "entrada" && direcao !== "saida")) {
+        res.status(400).json({ erro: "Informe o identificador e o sentido da confirmação." });
+        return;
+      }
+      const resultado = await acessoPorPassagem(placaNormalizada, "manual:" + id, async () => ({
+        usuarioId: null,
+        nomeMotorista: nomeMotorista || "Não Informado",
+        tipoMotorista: tipoMotorista || "Acesso Manual",
+        marca: marca || "Desconhecida",
+        modelo: modelo || "Desconhecido",
+        cor: cor || "Indefinida",
+      }), direcao);
+      if (resultado.status !== "registrado") {
+        res.status(409).json({ erro: resultado.status === "conflito" ? resultado.motivo : "Confirme o acesso." });
+        return;
+      }
+      res.json({
+        mensagem: "Acesso manual registrado com sucesso!",
+        repetido: resultado.repetido, direcao: resultado.direcao, hora: resultado.hora,
+      });
       return;
     }
 
@@ -214,6 +265,7 @@ export const registroManual = async (
 
     if (registroAberto) {
       registroAberto.horaSaida = horaAgora;
+      registroAberto.saidaManual = true;
       await registroAberto.save();
     } else {
       await RegistroAcesso.create({
@@ -229,7 +281,10 @@ export const registroManual = async (
       });
     }
 
-    res.status(200).json({ mensagem: "Acesso manual registrado com sucesso!" });
+    res.status(200).json({
+      mensagem: "Acesso manual registrado com sucesso!",
+      direcao: registroAberto ? "saida" : "entrada", hora: horaAgora,
+    });
   } catch (error) {
     console.error("Erro no registro manual:", error);
     res.status(500).json({ erro: "Erro ao registrar acesso manual." });

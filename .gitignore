@@ -146,3 +146,10 @@ vite.config.ts.timestamp-*
 
 # Local layer test helper (may contain local credentials/tokens)
 /scripts/configurar-layer-local.sh
+
+# Local vision benchmark inputs, weights and results
+/.stage01-local/
+/amostras/
+*.onnx
+*.pt
+*.pth

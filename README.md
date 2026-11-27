@@ -56,7 +56,7 @@ A solução é desenvolvida em **código aberto**, focada no cadastramento de se
 | Servidor / API       | Node.js + Express.js                    |
 | Frontend Web         | Vue.js                                  |
 | Banco de Dados       | MongoDB                                 |
-| Processamento Layer 2 | Python + OpenCV + Tesseract |
+| Processamento Layer 2 | Python + OpenCV + Tesseract, com perfil YOLO experimental |
 | Aquisição de dados | Câmeras LPR, vídeos e RTSP opcional |
 
 ---
@@ -91,7 +91,7 @@ flowchart LR
 Cada instituição possui uma camada configurada pela API:
 
 - **Layer 1**: mantém o fluxo atual de câmeras LPR e os endpoints de stream/evento.
-- **Layer 2**: representa instituições sem LPR. Os recursos exclusivos de LPR são bloqueados e a futura aquisição por visão computacional será habilitada nesta camada.
+- **Layer 2**: representa instituições sem LPR. Os recursos exclusivos de LPR são bloqueados e a aquisição por visão computacional está disponível por upload de vídeo.
 
 A camada é persistida em `Configuracao.camada` e pode ser alterada pelo endpoint autenticado de configuração. A ausência do campo em instalações existentes mantém o comportamento compatível com a Layer 1.
 
@@ -99,13 +99,15 @@ A camada é persistida em `Configuracao.camada` e pode ser alterada pelo endpoin
 
 Use `docker compose -f docker-compose.dev.yml up` para desenvolvimento e `docker compose up --build` para produção local. A API expõe `/health` (processo) e `/health/ready` (processo + MongoDB); o vision-worker expõe `/health`.
 
-Na **Layer 1**, o painel de segurança mantém o SSE e o robô de placas pode ser iniciado ou pausado apenas pelas ferramentas Dev. O status diferencia robô ativo, SSE conectado e câmera offline. Na **Layer 2**, o SSE e o robô não são abertos: envie um vídeo ou `result.json` pelo painel Dev. O worker retorna leituras consolidadas com confiança e o painel registra o resultado na sessão, permitindo limpar apenas a leitura atual. A integração RTSP possui toggle próprio e fica desativada por padrão.
+Na **Layer 1**, o painel de segurança mantém o SSE e o robô de placas pode ser iniciado ou pausado pelas ferramentas Dev. Na **Layer 2**, o painel Dev aceita vídeo ou `result.json` para revisão pela portaria. A captura contínua RTSP fica desativada por padrão e pode ser configurada por câmera no worker.
 
 ## Estratégia de testes e visão computacional
 
 O projeto combina testes de contrato HTTP/caixa-preta, testes unitários do vision-worker e testes de UI. A API usa Node Test Runner, `tsx` e Supertest; o worker usa Pytest; a UI usa Vitest e Vue Test Utils. Todos os fluxos devem passar por type-check e build.
 
-Para a Layer 2, FFmpeg é adequado para captura/decodificação e OpenCV para seleção de frames, correção de perspectiva e melhoria da imagem. O Tesseract pode ser usado como OCR após essa etapa, mas não é um detector de placas por si só e tende a exigir calibração por câmera. A implementação deve ficar isolada em um worker de processamento, enviar eventos normalizados para a API e incluir confiança, frame de origem e revisão humana; antes da adoção, deve ser comparada com um detector especializado de placas (por exemplo, YOLO + OCR) em amostras reais do campus.
+O perfil experimental da Layer 2 usa YOLO para localizar veículos e placas, seleciona recortes para o Tesseract e envia o resultado para revisão. O perfil padrão usa contornos OpenCV e Tesseract. Consulte os comandos, os pesos, o formato de evidência e o benchmark no [README do worker](vision-worker/README.md).
+
+A [apresentação](apresentacao.md) mostra o painel da portaria com dados fictícios. O [roteiro de bancada](docs/plano-banca/06-repasse.md) reproduz a demonstração local, e o [plano da banca](docs/plano-banca/ORQUESTRADOR.md) registra o estado das etapas.
 
 ## Fluxo de Acesso Veicular
 
